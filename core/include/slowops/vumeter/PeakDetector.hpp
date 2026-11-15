@@ -25,6 +25,7 @@ public:
         if (a >= threshold_)
         {
             hit_ = true;
+            ++hits_;
             if (hold_) holdLeft_ = holdLength_;
         }
         else if (holdLeft_ > 0)
@@ -42,12 +43,15 @@ public:
     }
 
     bool lit() const { return hit_ || holdLeft_ > 0; }
+    // Total clipped samples ever seen (never reset): lets a caller detect new clip events.
+    uint64_t hits() const { return hits_; }
     float peakSinceReset() const { return peak_; }
     void clearPeak() { peak_ = 0.0f; }
 
 private:
     bool hold_ = true;
     float threshold_ = 1.0f;
+    uint64_t hits_ = 0;
     bool hit_ = false;
     int64_t holdLeft_ = 0;
     int64_t holdLength_ = 88200;

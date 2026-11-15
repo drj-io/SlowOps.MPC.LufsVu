@@ -103,6 +103,7 @@ public:
     // Per-UI-frame clip state; consumes per-frame hits.
     bool consumeClip(int ch) { return peaks_[ch].consume(); }
     bool clipLit(int ch) const { return peaks_[ch].lit(); }
+    uint64_t clipHits() const { return peaks_[kLeft].hits() + peaks_[kRight].hits(); }
 
     const Trim& trim() const { return trim_; }
 

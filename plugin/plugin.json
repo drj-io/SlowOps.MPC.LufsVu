@@ -1,7 +1,7 @@
 {
   "name": "VU Meter",
   "manufacturer": "Slow Ops",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "format": "vst2",
   "kind": "effect",
   "uid": "SoVM",

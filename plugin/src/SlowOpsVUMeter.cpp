@@ -12,6 +12,7 @@
 #include "../../core/include/slowops/vumeter/VuEngine.hpp"
 #include "../../core/include/slowops/vumeter/Heat.hpp"
 #include "../../core/include/slowops/vumeter/HueCycle.hpp"
+#include "../../core/include/slowops/vumeter/AutoTrim.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -26,11 +27,20 @@ constexpr int kStereoSectors = 4, kStereoFrames = 128;   // per stereo needle
 constexpr int kMonoSectors   = 8, kMonoFrames   = 256;   // the large mono needle
 constexpr int kStereoPer = kStereoFrames / kStereoSectors;
 constexpr int kMonoPer   = kMonoFrames / kMonoSectors;
-// Glow filmstrip (React and Cycle lighting share one strip): frames 0..23 are React heat
-// steps (blue -> red -> purple), frames 24..59 are 36 hue steps (10 degrees each) for Cycle.
-constexpr int kHeatFrames = 24;
+// Glow filmstrip (React and Cycle lighting share one strip):
+//   [palette 0 heat 0..15][palette 1 heat 0..15][palette 2 heat 0..15]  React (Thermal, Neon, Amber)
+//   [hue 0..35]                                                         Cycle (10 degrees per step)
+//   [flash]                                                             white-hot clip flash
+constexpr int kHeatFrames = 16;
+constexpr int kPalettes = 3;
 constexpr int kHueFrames = 36;
-constexpr int kGlowFrames = kHeatFrames + kHueFrames;
+constexpr int kHueFirst = kHeatFrames * kPalettes;
+constexpr int kFlashFrame = kHueFirst + kHueFrames;
+constexpr int kGlowFrames = kFlashFrame + 1;
+
+constexpr double kAutoTrimSeconds = 3.0;
+constexpr int kCorrSteps = 21;                // correlation -1..+1 in 21 steps (frame 0 = no signal)
+constexpr float kMaxFloorVU = -40.0f;        // "cleared" max reading
 
 static_assert(kStereoFrames % kStereoSectors == 0 && kMonoFrames % kMonoSectors == 0, "sectors must divide frames");
 
@@ -40,6 +50,8 @@ const char* const kLightNames[] = { "Warm", "Cool", "Off", "React", "Cycle" };
 constexpr int kNumLights = 5;
 constexpr int kLightReact = 3;
 constexpr int kLightCycle = 4;
+constexpr double kClipThrDbfs[] = { 0.0, -0.3, -1.0, -3.0 };
+constexpr double kCycleBarValues[] = { 1.0, 2.0, 4.0, 8.0 };
 
 } // namespace
 
@@ -67,6 +79,16 @@ public:
         kNeedleR0 = kNeedleL0 + kStereoSectors,      // R sectors
         kNeedleM0 = kNeedleR0 + kStereoSectors,      // mono sectors
         kGlow = kNeedleM0 + kMonoSectors,            // React/Cycle glow frame 0..kGlowFrames-1
+        // ---- v0.2 (appended) ----
+        kAutoTrim,       // one-shot trigger: listen 3 s, then set Trim so the program averages 0 VU
+        kAutoBusy,       // display: AUTO is listening
+        kCorr,           // display: phase correlation frame (0 = no signal, 1..21 = -1..+1)
+        kMaxL,           // display: highest VU since the last reset (lamp tap)
+        kMaxR,
+        kMaxM,
+        kClipThr,        // CLIP threshold 0 / -0.3 / -1 / -3 dBFS
+        kCycleBars,      // Cycle light: 1 / 2 / 4 / 8 bars per trip round the hue wheel
+        kPalette,        // React light colours: Thermal / Neon / Amber
         kNumParams
     };
 
@@ -93,6 +115,17 @@ public:
         addSectors("needleR", "R Needle", kStereoSectors, kStereoPer);
         addSectors("needleM", "M Needle", kMonoSectors, kMonoPer);
         addDisplay(mpc::intParam("glow", "Glow", 0, kGlowFrames - 1, 0));
+        mpc::Param autoTrim = mpc::boolParam("autotrim", "Auto Trim", false);
+        autoTrim.automatable = false;
+        addParam(autoTrim);
+        addDisplay(mpc::boolParam("autobusy", "Auto Busy", false));
+        addDisplay(mpc::intParam("corr", "Correlation", 0, kCorrSteps, 0));
+        addDisplay(mpc::floatParam("maxL", "L Max", kMaxFloorVU, 10.0f, kMaxFloorVU, "", 1));
+        addDisplay(mpc::floatParam("maxR", "R Max", kMaxFloorVU, 10.0f, kMaxFloorVU, "", 1));
+        addDisplay(mpc::floatParam("maxM", "M Max", kMaxFloorVU, 10.0f, kMaxFloorVU, "", 1));
+        addParam(mpc::choiceParam("clipthr", "Clip Level", { "0 dBFS", "-0.3 dBFS", "-1 dBFS", "-3 dBFS" }, 0));
+        addParam(mpc::choiceParam("cyclebars", "Cycle Rate", { "1 Bar", "2 Bars", "4 Bars", "8 Bars" }, 1));
+        addParam(mpc::choiceParam("palette", "Palette", { "Thermal", "Neon", "Amber" }, 0));
         if (numParams() != kNumParams) mpc::log("SlowOpsVUMeter: parameter count mismatch");
     }
 
@@ -102,7 +135,7 @@ public:
         info.name = "VU Meter";
         info.vendor = "Slow Ops";
         info.uniqueId = MPC_FOURCC('S', 'o', 'V', 'M');
-        info.version = 100;            // 0.1.0
+        info.version = 200;            // 0.2.0
         info.isInstrument = false;
         info.numInputs = 2;
         info.numOutputs = 2;
@@ -129,9 +162,13 @@ public:
         engine_.reset();
         heat_.reset();
         hue_.reset();
+        autoTrim_.cancel();
+        flashLeft_ = 0;
+        lastHits_ = engine_.clipHits();
         displayAge_ = 0;
         lastMode_ = getInt(kMode);   // a loaded mode is not a view switch; the next tick refreshes it
         if (getNormalised(kResetClip) >= 0.5f) setValue(kResetClip, 0.0f);
+        if (getNormalised(kAutoTrim) >= 0.5f) setValue(kAutoTrim, 0.0f);
         publishView();
     }
 
@@ -148,6 +185,13 @@ public:
         {
             setValue(kResetClip, 0.0f);
             engine_.resetClips();
+            engine_.clearMax();
+        }
+        if (getNormalised(kAutoTrim) >= 0.5f)       // tap AUTO: start listening (tap again: cancel)
+        {
+            setValue(kAutoTrim, 0.0f);
+            if (autoTrim_.active()) autoTrim_.cancel();
+            else autoTrim_.start(kAutoTrimSeconds, sampleRate());
         }
         applyControls();
         publishView();
@@ -160,6 +204,35 @@ public:
         tempo_.timeSigNumerator = ctx.transport.timeSigNumerator;
         tempo_.timeSigDenominator = ctx.transport.timeSigDenominator;
         hue_.advance(tempo_, n, sampleRate());
+
+        if (autoTrim_.active())
+        {
+            autoTrim_.feed(visibleDeflection(), n);
+            double correction = 0.0;
+            if (autoTrim_.takeResult(correction) && autoTrim_.heardSignal())
+            {
+                // Meters read the trimmed output, so the correction adds to the current trim
+                // (with Bypass on the meters read the raw input: start from 0 dB).
+                const float base = getBool(kBypass) ? 0.0f : snapTrim(get(kTrim));
+                float trim = snapTrim(base + (float)correction);
+                trim = trim < -12.0f ? -12.0f : (trim > 12.0f ? 12.0f : trim);
+                setValue(kTrim, param(kTrim).toNormalised(trim));
+                applyControls();
+            }
+        }
+
+        // Clip flash (React/Cycle): any new clipped sample lights the cabinet white for one beat.
+        const uint64_t hits = engine_.clipHits();
+        if (hits != lastHits_)
+        {
+            lastHits_ = hits;
+            const double beat = tempo_.tempoValid && tempo_.bpm > 1.0 ? 60.0 / tempo_.bpm : 0.25;
+            flashLeft_ = (int64_t)(beat * sampleRate());
+        }
+        else if (flashLeft_ > 0)
+        {
+            flashLeft_ -= n;
+        }
 
         displayAge_ += n;
         const int mode = getInt(kMode);
@@ -178,8 +251,24 @@ public:
         {
             const int f = (int)std::lround(plain);
             char buf[32];
-            if (f < kHeatFrames) std::snprintf(buf, sizeof(buf), "heat %d%%", (int)std::lround(f * 100.0 / (kHeatFrames - 1)));
-            else                 std::snprintf(buf, sizeof(buf), "hue %d", (f - kHeatFrames) * 360 / kHueFrames);
+            if (f < kHueFirst)        std::snprintf(buf, sizeof(buf), "heat %d%%", (int)std::lround((f % kHeatFrames) * 100.0 / (kHeatFrames - 1)));
+            else if (f < kFlashFrame) std::snprintf(buf, sizeof(buf), "hue %d", (f - kHueFirst) * 360 / kHueFrames);
+            else                      std::snprintf(buf, sizeof(buf), "flash");
+            out = buf; return true;
+        }
+        if (index == kMaxL || index == kMaxR || index == kMaxM)
+        {
+            char buf[32];
+            if (plain <= kMaxFloorVU + 0.05f) std::snprintf(buf, sizeof(buf), "MAX --");
+            else                              std::snprintf(buf, sizeof(buf), "MAX %+.1f VU", (double)plain);
+            out = buf; return true;
+        }
+        if (index == kCorr)
+        {
+            const int f = (int)std::lround(plain);
+            char buf[32];
+            if (f <= 0) std::snprintf(buf, sizeof(buf), "--");
+            else        std::snprintf(buf, sizeof(buf), "%+.1f", (f - 1) * 2.0 / (kCorrSteps - 1) - 1.0);
             out = buf; return true;
         }
         if (index >= kNeedleL0 && index < kGlow)
@@ -234,6 +323,23 @@ private:
         engine_.setReferenceDbfs(kRefDbfs[getInt(kRef)]);
         engine_.setPeakHold(getInt(kPeak) == 1);
         engine_.setTrimDb(snapTrim(get(kTrim)), getBool(kBypass));
+        engine_.setClipThresholdDbfs(kClipThrDbfs[getInt(kClipThr)]);
+        hue_.setBars(kCycleBarValues[getInt(kCycleBars)]);
+    }
+
+    // The needle the user is looking at: the louder of L/R in STEREO, the sum in MONO.
+    double visibleDeflection() const
+    {
+        return getInt(kMode) == 0 ? std::fmax(engine_.deflection(kLeft), engine_.deflection(kRight))
+                                  : engine_.deflection(kMono);
+    }
+
+    void publishMax(int index, int meter)
+    {
+        double vu = deflectionToVU(engine_.maxDeflection(meter));
+        if (vu < kMaxFloorVU) vu = kMaxFloorVU;
+        if (vu > 10.0) vu = 10.0;
+        setValue(index, param(index).toNormalised(std::round((float)vu * 10.0f) / 10.0f));
     }
 
     void publishView() { setValue(kView, (float)(getInt(kMode) * kNumLights + getInt(kLight)) / (float)(2 * kNumLights - 1)); }
@@ -251,15 +357,18 @@ private:
     {
         // React heat follows the loudest needle of the visible view; it runs whatever the
         // Light setting, so switching to React shows the true current colour at once.
-        const double vu = getInt(kMode) == 0
-            ? deflectionToVU(std::fmax(engine_.deflection(kLeft), engine_.deflection(kRight)))
-            : deflectionToVU(engine_.deflection(kMono));
-        const double heat = heat_.update(vu, dt);
+        const double heat = heat_.update(deflectionToVU(visibleDeflection()), dt);
         const int light = getInt(kLight);
         int glow = -1;
-        if (light == kLightReact) glow = (int)std::lround(heat * (kHeatFrames - 1));
-        if (light == kLightCycle) glow = kHeatFrames + (int)std::lround(hue_.phase() * kHueFrames) % kHueFrames;
+        if (light == kLightReact) glow = getInt(kPalette) * kHeatFrames + (int)std::lround(heat * (kHeatFrames - 1));
+        if (light == kLightCycle) glow = kHueFirst + (int)std::lround(hue_.phase() * kHueFrames) % kHueFrames;
+        if (glow >= 0 && flashLeft_ > 0) glow = kFlashFrame;
         if (glow >= 0) setValue(kGlow, (float)glow / (float)(kGlowFrames - 1));
+
+        setValue(kAutoBusy, autoTrim_.active() ? 1.0f : 0.0f);
+        const Correlation& c = engine_.correlation();
+        const int corr = c.hasSignal() ? 1 + (int)std::lround((c.value() + 1.0) * 0.5 * (kCorrSteps - 1)) : 0;
+        setValue(kCorr, (float)corr / (float)kCorrSteps);
 
         const bool clipL = engine_.consumeClip(kLeft);
         const bool clipR = engine_.consumeClip(kRight);
@@ -269,11 +378,14 @@ private:
             publishNeedle(kNeedleR0, kStereoSectors, kStereoPer, deflectionToFrame(engine_.deflection(kRight), kStereoFrames));
             setValue(kClipL, clipL ? 1.0f : 0.0f);
             setValue(kClipR, clipR ? 1.0f : 0.0f);
+            publishMax(kMaxL, kLeft);
+            publishMax(kMaxR, kRight);
         }
         else
         {
             publishNeedle(kNeedleM0, kMonoSectors, kMonoPer, deflectionToFrame(engine_.deflection(kMono), kMonoFrames));
             setValue(kClipIn, (clipL || clipR) ? 1.0f : 0.0f);
+            publishMax(kMaxM, kMono);
         }
     }
 
@@ -281,6 +393,9 @@ private:
     HeatFollower heat_;
     HueCycle hue_;
     TempoInfo tempo_;
+    AutoTrim autoTrim_;
+    uint64_t lastHits_ = 0;
+    int64_t flashLeft_ = 0;
     int displayAge_ = 0;
     int displayEvery_ = 1470;
     int lastMode_ = 0;

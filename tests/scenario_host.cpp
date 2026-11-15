@@ -23,8 +23,10 @@ static int g_fail = 0, g_pass = 0;
 // Parameter indices (plugin/src/SlowOpsVUMeter.cpp). Permanent.
 enum P { kReserved = 0, kMode, kRef, kPeak, kLight, kBypass, kTrim, kResetClip,
          kView, kClipL, kClipR, kClipIn, kNeedleL0, kNeedleR0 = kNeedleL0 + 4, kNeedleM0 = kNeedleR0 + 4,
-         kGlow = kNeedleM0 + 8, kNumParams };
-static constexpr int kGlowMax = 59;     // 24 heat steps + 36 hue steps
+         kGlow = kNeedleM0 + 8,
+         kAutoTrim, kAutoBusy, kCorr, kMaxL, kMaxR, kMaxM, kClipThr, kCycleBars, kPalette, kNumParams };
+// Glow frames: 3 palettes x 16 heat steps, then 36 hue steps, then the flash frame.
+static constexpr int kGlowMax = 84, kHueFirst = 48, kFlash = 84;
 static float light(int i) { return (float)i / 4.0f; }   // Warm, Cool, Off, React, Cycle
 static long viewOf(float v) { return std::lround(v * 9); }
 // Pseudo-indices for the needle decoder.
@@ -314,14 +316,14 @@ static void react()
     CHECK(heatStep(p) == 0, "silence glows coldest blue (step %d)", heatStep(p));
     p.input = sine(p.sr, -18.0);   // 0 VU
     p.runFor(3.0);
-    CHECK(std::abs(heatStep(p) - 15) <= 1, "0 VU glows red (step %d of 23)", heatStep(p));
+    CHECK(std::abs(heatStep(p) - 10) <= 1, "0 VU glows red (step %d of 15)", heatStep(p));
     p.input = sine(p.sr, -15.0);   // +3 VU
     p.runFor(3.0);
-    CHECK(heatStep(p) == 23, "+3 VU glows full purple (step %d)", heatStep(p));
+    CHECK(heatStep(p) == 15, "+3 VU glows full purple (step %d)", heatStep(p));
     p.input = [](int64_t, float& l, float& r) { l = r = 0.0f; };
     p.runFor(0.2);
     const int warmish = heatStep(p);
-    CHECK(warmish > 10, "cools slowly: still step %d 0.2 s after the music stops", warmish);
+    CHECK(warmish > 6, "cools slowly: still step %d 0.2 s after the music stops", warmish);
     p.runFor(4.0);
     CHECK(heatStep(p) == 0, "back to blue after the glow decays");
     p.input = sine(p.sr, -18.0, -1.0);   // anti-phase
@@ -338,7 +340,7 @@ static void cycle()
 {
     std::printf("Cycle lighting\n");
     auto glow = [](Plug& p) { return (int)std::lround(p.get(kGlow) * kGlowMax); };
-    auto expectHue = [](double ppq, double cycleQ) { return 24 + (int)std::lround(std::fmod(ppq, cycleQ) / cycleQ * 36) % 36; };
+    auto expectHue = [](double ppq, double cycleQ) { return kHueFirst + (int)std::lround(std::fmod(ppq, cycleQ) / cycleQ * 36) % 36; };
     auto hueDiff = [](int a, int b) { int d = std::abs(a - b) % 36; return std::min(d, 36 - d); };
     {
         Plug p; p.set(kLight, light(4)); p.transport = p.rolling = true; p.bpm = 120.0; p.input = program(p.sr);
@@ -349,9 +351,9 @@ static void cycle()
         {
             p.runFor(1.0 / 6.0, { 128 });
             worst = std::max(worst, hueDiff(glow(p), expectHue(p.ppq, 8.0)));
-            inRange = inRange && glow(p) >= 24 && glow(p) <= kGlowMax;
+            inRange = inRange && glow(p) >= kHueFirst && glow(p) < kFlash;
         }
-        CHECK(inRange, "Cycle only uses the hue frames (24..59)");
+        CHECK(inRange, "Cycle only uses the hue frames (48..83)");
         CHECK(worst <= 1, "120 BPM 4/4: hue follows the song position, one cycle per 2 bars (worst %d step)", worst);
         CHECK(p.bitExact, "Cycle lighting never touches the audio");
     }
@@ -369,6 +371,120 @@ static void cycle()
         const int a = glow(p);
         p.runFor(1.0);
         CHECK(hueDiff(a, glow(p)) == 9, "stopped: keeps cycling at the tempo (a quarter turn per second at 120 BPM)");
+    }
+}
+
+static void v02()
+{
+    auto norm = [](int i, int n) { return (float)i / (float)(n - 1); };
+    auto glow = [](Plug& p) { return (int)std::lround(p.get(kGlow) * kGlowMax); };
+
+    std::printf("AUTO TRIM\n");
+    {
+        Plug p; p.input = sine(p.sr, -24.0);          // -6 VU at the default -18 dBFS reference
+        p.runFor(1.0);
+        p.set(kAutoTrim, 1.0f); p.runFor(0.1);
+        CHECK(p.get(kAutoTrim) < 0.5f && p.get(kAutoBusy) >= 0.5f, "tap AUTO: trigger resets, listening lamp on");
+        p.runFor(3.2);
+        CHECK(p.get(kAutoBusy) < 0.5f && p.text(kTrim) == "+6.0 dB", "after 3 s: Trim set to %s, lamp off", p.text(kTrim).c_str());
+        p.runFor(2.0);
+        const int f0 = vuFrame(0.0);
+        CHECK(std::abs(p.frame(kNeedleL) - f0) <= 1, "...and the needle now sits on 0 VU (frame %d, expect %d)", p.frame(kNeedleL), f0);
+        p.bitExact = true;
+        p.expectGain = std::pow(10.0f, 6.0f / 20.0f); p.maxGainErr = 0.0; p.runFor(0.3);
+        CHECK(p.maxGainErr < 1e-5, "the audio gain really is +6 dB");
+    }
+    {
+        Plug p; p.input = sine(p.sr, -15.0); p.set(kTrim, norm(140, 241));   // trim +2.0, program +5 VU after trim
+        p.runFor(1.5);
+        p.set(kAutoTrim, 1.0f); p.runFor(3.3);
+        CHECK(p.text(kTrim) == "-3.0 dB", "corrects relative to the current trim (+2.0 -> %s)", p.text(kTrim).c_str());
+    }
+    {
+        Plug p; p.runFor(0.5);
+        p.set(kTrim, norm(130, 241));                  // +1.0 dB
+        p.set(kAutoTrim, 1.0f); p.runFor(3.3);
+        CHECK(p.text(kTrim) == "+1.0 dB", "silence: Trim left alone (%s)", p.text(kTrim).c_str());
+        p.input = sine(p.sr, -24.0);
+        p.set(kAutoTrim, 1.0f); p.runFor(1.0); p.set(kAutoTrim, 1.0f); p.runFor(3.0);
+        CHECK(p.text(kTrim) == "+1.0 dB" && p.get(kAutoBusy) < 0.5f, "a second tap cancels");
+    }
+    {
+        Plug a; a.set(kAutoTrim, 1.0f);
+        auto chunk = a.save();
+        Plug b; b.load(chunk); b.input = sine(b.sr, -24.0); b.runFor(4.0);
+        CHECK(b.get(kAutoTrim) < 0.5f && b.text(kTrim) == "0.0 dB", "a saved AUTO trigger never fires on load");
+    }
+
+    std::printf("Phase correlation\n");
+    {
+        auto corr = [](Plug& p) { return (int)std::lround(p.get(kCorr) * 21); };
+        Plug p; p.runFor(0.5);
+        CHECK(corr(p) == 0, "silence: no reading");
+        p.input = sine(p.sr, -18.0); p.runFor(1.5);
+        CHECK(corr(p) == 21 && p.text(kCorr) == "+1.0", "mono material: +1 (%s)", p.text(kCorr).c_str());
+        p.input = sine(p.sr, -18.0, -1.0); p.runFor(2.0);
+        CHECK(corr(p) == 1 && p.text(kCorr) == "-1.0", "phase-flipped: -1 (%s)", p.text(kCorr).c_str());
+        p.set(kMode, 1.0f); p.runFor(0.2);
+        CHECK(corr(p) == 1, "shown in MONO too");
+    }
+
+    std::printf("Max VU readouts\n");
+    {
+        Plug p; p.input = sine(p.sr, -15.0); p.runFor(1.5);   // +3 VU
+        p.input = sine(p.sr, -24.0); p.runFor(1.5);            // -6 VU
+        CHECK(p.text(kMaxL) == "MAX +3.1 VU" && p.text(kMaxR) == "MAX +3.1 VU", "STEREO: L/R hold %s (incl. needle overshoot)", p.text(kMaxL).c_str());
+        CHECK(p.text(kMaxM) == "MAX --", "MONO readout not published while hidden");
+        p.set(kResetClip, 1.0f); p.runFor(0.5);
+        CHECK(p.text(kMaxL) == "MAX -6.0 VU", "lamp tap clears it (now %s)", p.text(kMaxL).c_str());
+        p.set(kMode, 1.0f); p.runFor(0.2);
+        CHECK(p.text(kMaxM) == "MAX -6.0 VU", "MONO shows the sum's max (%s)", p.text(kMaxM).c_str());
+    }
+
+    std::printf("CLIP threshold\n");
+    {
+        Plug p; p.set(kClipThr, norm(2, 4));                    // -1 dBFS
+        p.input = [](int64_t t, float& l, float& r) { l = (t == 500) ? 0.9f : 0.0f; r = 0.0f; };
+        p.runFor(0.2);
+        CHECK(p.get(kClipL) >= 0.5f, "-1 dBFS: a 0.9 sample lights CLIP");
+        Plug q; q.input = [](int64_t t, float& l, float& r) { l = (t == 500) ? 0.9f : 0.0f; r = 0.0f; };
+        q.runFor(0.2);
+        CHECK(q.get(kClipL) < 0.5f, "0 dBFS (default): it does not");
+    }
+
+    std::printf("Light extras\n");
+    {
+        Plug p; p.set(kLight, light(4)); p.set(kCycleBars, norm(3, 4));   // 8 bars
+        p.transport = p.rolling = true; p.bpm = 120.0;
+        p.runFor(1.0);
+        int worst = 0;
+        for (int i = 0; i < 12; ++i)
+        {
+            p.runFor(0.5);
+            const int want = kHueFirst + (int)std::lround(std::fmod(p.ppq, 32.0) / 32.0 * 36) % 36;
+            int d = std::abs(glow(p) - want) % 36; worst = std::max(worst, std::min(d, 36 - d));
+        }
+        CHECK(worst <= 1, "Cycle rate 8 bars: one trip per 32 beats (worst %d step)", worst);
+    }
+    {
+        Plug p; p.set(kLight, light(3)); p.set(kPalette, norm(1, 3));     // React, Neon
+        p.input = sine(p.sr, -15.0); p.runFor(3.0);
+        CHECK(glow(p) == 16 + 15, "React palette Neon: frame %d (palette offset 16)", glow(p));
+        p.set(kPalette, norm(2, 3)); p.runFor(0.1);
+        CHECK(glow(p) == 32 + 15, "palette Amber: frame %d", glow(p));
+    }
+    {
+        Plug p; p.set(kLight, light(4)); p.transport = p.rolling = true; p.bpm = 120.0;
+        p.input = [](int64_t t, float& l, float& r) { l = (t == 44100) ? 1.0f : 0.0f; r = 0.0f; };
+        p.runFor(1.1);
+        CHECK(glow(p) == kFlash, "clip: the cabinet flashes");
+        p.runFor(0.35);
+        CHECK(glow(p) == kFlash, "...for a beat (still flashing at ~0.45 s)");
+        p.runFor(0.2);
+        CHECK(glow(p) != kFlash && glow(p) >= kHueFirst, "...then back to the cycle after one beat at 120 BPM (0.5 s)");
+        Plug q; q.input = [](int64_t t, float& l, float& r) { l = (t == 1000) ? 1.0f : 0.0f; r = 0.0f; };
+        q.runFor(0.5);
+        CHECK(q.automate().count[kGlow] == 0, "no flash (no glow writes) with a static light");
     }
 }
 
@@ -404,6 +520,7 @@ int main(int argc, char** argv)
     state();
     react();
     cycle();
+    v02();
     instances();
     std::printf("\nscenario_host: %d passed, %d failed\n", g_pass, g_fail);
     return g_fail == 0 ? 0 : 1;
