@@ -101,17 +101,19 @@ def main():
                         fail('%s: %s height %d not divisible by %d frames' % (name, data['image'], size[1], nf))
                     else:
                         fw, fh = size[0], size[1] // nf
-                        # React glow strips are smooth gradients drawn at reduced size on purpose.
-                        k = SCALED.get(data['image'], 1)
-                        if (fw * k, fh * k) != (w, h):
-                            fail('%s: frame %dx%d (x%d) but bounds %dx%d' % (name, fw, fh, k, w, h))
+                        # React glow strips are smooth gradients drawn at reduced size on purpose, and the
+                        # LUFS tab draws the METER dials at LUFS_SCALE.
+                        k = SCALED.get(data['image'], 1) * (L.LUFS_SCALE if name.startswith('lufs ') else 1)
+                        if abs(fw * k - w) > 1 or abs(fh * k - h) > 1:
+                            fail('%s: frame %dx%d (x%g) but bounds %dx%d' % (name, fw, fh, k, w, h))
                         decoded[0] += fw * fh * nf * 4
                     want = needle_frames.get(data['handleName'])
                     if want is not None and want != nf:
                         fail('%s: %d frames but the plugin sector has %d steps' % (name, nf, want))
                 elif size:
                     decoded[0] += size[0] * size[1] * 4
-                if size and data.get('imageType') != 'FilmStrip' and size != (w, h):
+                k = L.LUFS_SCALE if name.startswith('lufs ') else 1     # LUFS tab reuses METER art at 0.8
+                if size and data.get('imageType') != 'FilmStrip' and (abs(size[0] * k - w) > 1 or abs(size[1] * k - h) > 1):
                     fail('%s: image %dx%d drawn into %dx%d (would be scaled)' % (name, size[0], size[1], w, h))
             elif kind == 'Button':
                 for key in ('onImage', 'offImage'):

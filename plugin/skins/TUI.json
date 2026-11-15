@@ -76,20 +76,6 @@
     ]
    },
    {
-    "key": "Parameter 29",
-    "value": [
-     "Off",
-     "On"
-    ]
-   },
-   {
-    "key": "Parameter 30",
-    "value": [
-     "Off",
-     "On"
-    ]
-   },
-   {
     "key": "Parameter 35",
     "value": [
      "0 dBFS",
@@ -113,6 +99,62 @@
      "Thermal",
      "Neon",
      "Amber"
+    ]
+   },
+   {
+    "key": "Parameter 38",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 40",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 42",
+    "value": [
+     "Run",
+     "Hold"
+    ]
+   },
+   {
+    "key": "Parameter 43",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 44",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 45",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 46",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 47",
+    "value": [
+     "Off",
+     "On"
     ]
    }
   ],
@@ -838,64 +880,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "930 530 180 48"
-       }
-      },
-      {
-       "version": 2,
-       "componentData": {
-        "version": 1,
-        "name": "auto busy",
-        "type": "Image",
-        "data": {
-         "version": 2,
-         "imageType": "FilmStrip",
-         "colour": "0",
-         "image": "auto_busy.png",
-         "numFrames": 2,
-         "handleName": "Parameter 30"
-        }
-       },
-       "handle remapping": {
-        "version": 1,
-        "map": []
-       },
-       "bounds": {
-        "version": 1,
-        "acceptsHWFocus": "No",
-        "showWhenDataModelInvalid": "Show",
-        "whenVisible": "Always",
-        "boundsType": "Absolute",
-        "bounds": "780 524 126 60"
-       }
-      },
-      {
-       "version": 2,
-       "componentData": {
-        "version": 1,
-        "name": "auto",
-        "type": "Button",
-        "data": {
-         "version": 2,
-         "onImage": "auto_on.png",
-         "offImage": "auto_off.png",
-         "buttonId": 1,
-         "numButtonsInGroup": 1,
-         "handleName": "Parameter 29",
-         "gestureBehaviour": "Instant"
-        }
-       },
-       "handle remapping": {
-        "version": 1,
-        "map": []
-       },
-       "bounds": {
-        "version": 1,
-        "acceptsHWFocus": "No",
-        "showWhenDataModelInvalid": "Hide",
-        "whenVisible": "Always",
-        "boundsType": "Absolute",
-        "bounds": "788 532 110 44"
+        "bounds": "864 530 180 48"
        }
       },
       {
@@ -1006,8 +991,1263 @@
    },
    {
     "version": 1,
-    "tabName": "SETUP",
+    "tabName": "LUFS",
     "fnKeyIndex": 1,
+    "fnKeySubIndex": 0,
+    "componentDefinition": {
+     "version": 2,
+     "actions": [],
+     "backgroundData": {
+      "version": 1,
+      "focussed": {
+       "version": 1,
+       "colour": "ff11121f",
+       "image": "bg_lufs.png"
+      },
+      "unfocussed": {
+       "version": 1,
+       "colour": "ff11121f",
+       "image": "bg_lufs.png"
+      }
+     },
+     "ignoreMousePresses": false,
+     "disableCoarseDataWheel": false,
+     "componentsData": [
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs face warm",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "Regular",
+         "colour": "0",
+         "image": "face_lufs_warm.png"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "152 66 976 294",
+        "additionalInvalidatingHandles": [
+         "IndexedEnabling/0/10/Parameter 8"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs face cool",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "Regular",
+         "colour": "0",
+         "image": "face_lufs_cool.png"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "152 66 976 294",
+        "additionalInvalidatingHandles": [
+         "IndexedEnabling/1/10/Parameter 8"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs face off",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "Regular",
+         "colour": "0",
+         "image": "face_lufs_off.png"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "152 66 976 294",
+        "additionalInvalidatingHandles": [
+         "IndexedEnabling/2/10/Parameter 8"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs glow",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "glow_stereo.png",
+         "numFrames": 169,
+         "handleName": "Parameter 28"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "152 66 976 294",
+        "additionalInvalidatingHandles": [
+         "RangedEnabling/3/4/10/Parameter 8"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs face glow",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "Regular",
+         "colour": "0",
+         "image": "face_lufs_glow.png"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "152 66 976 294",
+        "additionalInvalidatingHandles": [
+         "RangedEnabling/3/4/10/Parameter 8"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs L needle 1",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s1.png",
+         "numFrames": 33,
+         "handleName": "Parameter 12"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "213 124 178 180"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs L needle 2",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s2.png",
+         "numFrames": 33,
+         "handleName": "Parameter 13"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "284 94 122 200"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs L needle 3",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s3.png",
+         "numFrames": 33,
+         "handleName": "Parameter 14"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "378 94 111 198"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs L needle 4",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s4.png",
+         "numFrames": 33,
+         "handleName": "Parameter 15"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "403 112 165 190"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs R needle 1",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s1.png",
+         "numFrames": 33,
+         "handleName": "Parameter 16"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "698 124 178 180"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs R needle 2",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s2.png",
+         "numFrames": 33,
+         "handleName": "Parameter 17"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "769 94 122 200"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs R needle 3",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s3.png",
+         "numFrames": 33,
+         "handleName": "Parameter 18"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "862 94 111 198"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs R needle 4",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "needle_s4.png",
+         "numFrames": 33,
+         "handleName": "Parameter 19"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "888 112 165 190"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs max L",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 14.0
+          },
+          "colour": "ff18120e",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 32"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "477 285 120 19"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs max R",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 14.0
+          },
+          "colour": "ff18120e",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 33"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "962 285 120 19"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "side l clip",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "lamp.png",
+         "numFrames": 2,
+         "handleName": "Parameter 9"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "69 182 30 30"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs l clip reset",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "hit_lufs_on.png",
+         "offImage": "hit_lufs_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 7",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "44 172 80 92"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "side r clip",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "lamp.png",
+         "numFrames": 2,
+         "handleName": "Parameter 10"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1181 182 30 30"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs r clip reset",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "hit_lufs_on.png",
+         "offImage": "hit_lufs_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 7",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1156 172 80 92"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "readout integrated",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "Bold",
+           "height": 40.0
+          },
+          "colour": "ffffa83c",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 48"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "38 368 172 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "readout short-term",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "Bold",
+           "height": 40.0
+          },
+          "colour": "ffffa83c",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 49"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "338 368 172 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "readout true peak max",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "Bold",
+           "height": 40.0
+          },
+          "colour": "ffffa83c",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 51"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "638 368 172 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "readout gain reduction",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "Bold",
+           "height": 40.0
+          },
+          "colour": "ffffa83c",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 52"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "938 368 172 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "auto state",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 16.0
+          },
+          "colour": "fff6c478",
+          "justification": "left verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 53"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "58 432 196 22"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "auto gain",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 16.0
+          },
+          "colour": "fff6c478",
+          "justification": "left verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 54"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "258 432 120 22"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "momentary",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 16.0
+          },
+          "colour": "fff6c478",
+          "justification": "horizontallyCentred verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 50"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "540 432 200 22"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "elapsed",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 16.0
+          },
+          "colour": "fff6c478",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 55"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1002 432 220 22"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs auto",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "lufs_auto_on.png",
+         "offImage": "lufs_auto_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 38",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "36 544 136 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "limiter",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "lufs_lim_on.png",
+         "offImage": "lufs_lim_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 40",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "488 544 136 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "target down",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "arrow_l_on.png",
+         "offImage": "arrow_l_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 44",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "206 544 44 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "target value",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 24.0
+          },
+          "colour": "fff6e5be",
+          "justification": "horizontallyCentred verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 39"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "254 544 144 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "target up",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "arrow_r_on.png",
+         "offImage": "arrow_r_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 45",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "402 544 44 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "ceiling down",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "arrow_l_on.png",
+         "offImage": "arrow_l_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 46",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "658 544 44 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "ceiling value",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 24.0
+          },
+          "colour": "fff6e5be",
+          "justification": "horizontallyCentred verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 41"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "706 544 144 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "ceiling up",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "arrow_r_on.png",
+         "offImage": "arrow_r_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 47",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "854 544 44 50"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs trim knob",
+        "type": "Knob",
+        "data": {
+         "version": 3,
+         "knobType": "FilmStrip",
+         "filmStrip": "knob_trim.png",
+         "numFrames": 127,
+         "invert": false,
+         "dragOrientation": "Vertical",
+         "handleName": "Parameter 6"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "Yes",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "940 510 76 76"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs trim value",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 26.0
+          },
+          "colour": "fff6e5be",
+          "justification": "horizontallyCentred verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 6"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1020 526 104 44"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "clear",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "clear_on.png",
+         "offImage": "clear_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 43",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1128 494 124 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "run hold",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "hold_on.png",
+         "offImage": "hold_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 42",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1128 552 124 52"
+       }
+      }
+     ]
+    },
+    "qlinkBoundsData": []
+   },
+   {
+    "version": 1,
+    "tabName": "SETUP",
+    "fnKeyIndex": 2,
     "fnKeySubIndex": 0,
     "componentDefinition": {
      "version": 2,

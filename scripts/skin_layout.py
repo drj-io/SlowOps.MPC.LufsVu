@@ -40,6 +40,8 @@ AMBER_LIGHT = (255, 214, 140)
 AMBER_TEXT = (255, 186, 92)
 LAVENDER = (160, 168, 232)
 DARK_TEXT = (42, 22, 8)
+READOUT_AMBER = (255, 168, 60)                  # LUFS tuning-strip numbers
+STATUS_AMBER = (246, 196, 120)
 
 # Dial illumination per Light setting: (face centre colour, face edge colour, glow colour, glow strength)
 LIGHTS = {
@@ -158,9 +160,7 @@ BYPASS_BUTTON = (CARDS['bypass'][0], STRIP_Y, CARDS['bypass'][1], STRIP_H)
 KNOB_SIZE = 76
 KNOB = (CARDS['output'][0] + CARDS['output'][1] - KNOB_SIZE - 40, STRIP_Y + 40, KNOB_SIZE, KNOB_SIZE)
 TRIM_CAPTION = (KNOB[0], KNOB[1] + KNOB_SIZE + 4, KNOB_SIZE, 20)       # burned "TRIM" under the knob
-AUTO_BUTTON = (CARDS['output'][0] + 28, STRIP_Y + 66, 110, 44)         # AUTO trim trigger
-AUTO_GLOW_PAD = 8                                                      # listening halo around it
-TRIM_VALUE = (CARDS['output'][0] + 170, STRIP_Y + 64, 180, 48)          # live Label
+TRIM_VALUE = ((CARDS['output'][0] + KNOB[0]) // 2 - 90, STRIP_Y + 64, 180, 48)   # live Label, centred left of the knob
 CORR = (800, 401, 190, 38)                                             # phase correlation strip (bottom rail)
 CORR_STEPS = 21                                                        # must match the plugin (0 = no signal)
 MAX_LABEL_W, MAX_LABEL_H = 150, 24                                     # MAX VU readouts (lower-right of each dial)
@@ -391,3 +391,83 @@ def lamp_hit_rect(lamp_xy, side):
     if side == 'right':
         return (x - 4, y - 4, LAMP_HIT_W, LAMP + 8)
     return (x + LAMP + 4 - LAMP_HIT_W, y - 4, LAMP_HIT_W, LAMP + 8)
+
+
+# ---------------------------------------------------------------------------- LUFS tab
+# Top: the METER tab's dials, reused at 0.8 scale (same needle strips and glow strip; the
+# faces are caption-free variants). Below them, inside the cabinet: one smoked-glass
+# "radio tuning dial" strip with the four numeric readouts. Bottom: three control cards.
+LUFS_SCALE = 0.8
+LUFS_CABINET = (16, 58, 1248, 414)
+LUFS_FACE = (152, 66, 976, 294)                # CABINET_INNER scaled by LUFS_SCALE
+
+
+def lufs_xy(x, y):
+    """METER-tab point (inside CABINET_INNER) -> LUFS-tab point."""
+    return (LUFS_FACE[0] + (x - CABINET_INNER[0]) * LUFS_SCALE, LUFS_FACE[1] + (y - CABINET_INNER[1]) * LUFS_SCALE)
+
+
+def lufs_rect(r):
+    x, y = lufs_xy(r[0], r[1])
+    return (int(round(x)), int(round(y)), int(round(r[2] * LUFS_SCALE)), int(round(r[3] * LUFS_SCALE)))
+
+
+LUFS_LAMPS = [(69, 182), (1181, 182)]          # clip lamps in the walnut either side of the dials
+LUFS_LAMP_HIT = (80, 92)                       # tap area (lamp + "CLIP" caption below it)
+
+
+def lufs_lamp_hit(i):
+    x, y = LUFS_LAMPS[i]
+    w, h = LUFS_LAMP_HIT
+    return (x + LAMP // 2 - w // 2, y - 10, w, h)
+
+
+DIAL_STRIP = (40, 340, 1200, 118)              # the tuning-dial readout strip
+READOUT_TITLES = ['INTEGRATED', 'SHORT-TERM', 'TRUE PEAK MAX', 'GAIN REDUCTION']
+READOUT_UNITS = ['LUFS', 'LUFS', 'dBTP', 'dB']
+READOUT_PARAMS = ['Integrated', 'Short-term', 'True Peak Max', 'Gain Reduction']
+
+
+def readout_centre(i):
+    return DIAL_STRIP[0] + DIAL_STRIP[2] * (2 * i + 1) / 8.0
+
+
+def readout_value_rect(i):
+    """Right-justified number; the unit is printed just right of it on the background."""
+    cx = readout_centre(i)
+    return (int(cx - 152), DIAL_STRIP[1] + 28, 172, 50)
+
+
+READOUT_UNIT_X = 30                            # unit starts this far right of the column centre
+STRIP_TICKS_Y = DIAL_STRIP[1] + 82             # decorative tuning scale
+STATUS_ROW_Y = DIAL_STRIP[1] + 92              # small Labels: AUTO status + gain | momentary | elapsed
+STATUS_RECT = (DIAL_STRIP[0] + 18, STATUS_ROW_Y, 196, 22)
+AUTO_GAIN_RECT = (DIAL_STRIP[0] + 218, STATUS_ROW_Y, 120, 22)
+MOMENTARY_RECT = (DIAL_STRIP[0] + 500, STATUS_ROW_Y, 200, 22)
+ELAPSED_RECT = (DIAL_STRIP[0] + DIAL_STRIP[2] - 18 - 220, STATUS_ROW_Y, 220, 22)
+
+LUFS_CARDS = {                                 # x, y, w, h
+    'auto':    (16, 482, 440, 132),
+    'limiter': (468, 482, 440, 132),
+    'trim':    (920, 482, 344, 132),
+}
+LUFS_SPLIT = 176                               # divider inside the auto / limiter cards
+
+
+def lufs_toggle(card):
+    x, y, w, h = LUFS_CARDS[card]
+    return (x + 20, y + 62, 136, 52)
+
+
+def lufs_stepper(card):
+    """(left arrow, value pill, right arrow) rects for TARGET / CEILING."""
+    x, y, w, h = LUFS_CARDS[card]
+    return ((x + 190, y + 62, 44, 50), (x + 238, y + 62, 144, 50), (x + 386, y + 62, 44, 50))
+
+
+LUFS_TITLES = {'auto': ('AUTO', 'TARGET'), 'limiter': ('LIMITER', 'CEILING')}
+_tx, _ty = LUFS_CARDS['trim'][0], LUFS_CARDS['trim'][1]
+LUFS_KNOB = (_tx + 20, _ty + 28, KNOB_SIZE, KNOB_SIZE)
+LUFS_TRIM_VALUE = (_tx + 100, _ty + 44, 104, 44)
+CLEAR_BUTTON = (_tx + 208, _ty + 12, 124, 52)
+HOLD_BUTTON = (_tx + 208, _ty + 70, 124, 52)

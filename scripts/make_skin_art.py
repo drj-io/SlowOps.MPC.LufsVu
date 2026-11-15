@@ -231,6 +231,100 @@ def make_setup_background():
     return bg
 
 
+def tuning_strip(bg):
+    """The smoked-glass radio-dial readout strip: tobacco glass in a brass frame, engraved
+    labels, gold dividers, units, and a decorative tuning scale (it has no signal meaning)."""
+    x, y, w, h = L.DIAL_STRIP
+    bg.alpha_composite(glow_rect(bg.size, (x - 2, y + 4, w + 4, h + 4), 20, (0, 0, 0), 8, 10, 200))
+    paste(bg, vgrad(w, h, L.BRASS_LIGHT, L.BRASS_DARK), rr_mask(w, h, (0, 0, w, h), 20), (x, y))
+    gw, gh = w - 8, h - 8
+    glass = vgrad(gw, gh, (58, 30, 12), (24, 12, 6))
+    warm = radial(gw, gh, gw / 2.0, gh * 0.55, gw * 0.65, gh * 1.4, (96, 52, 18), (24, 12, 6), 1.2)
+    glass = ImageChops.lighter(glass, warm)
+    paste(bg, glass, rr_mask(gw, gh, (0, 0, gw, gh), 17), (x + 4, y + 4))
+    # glass sheen along the top edge
+    sheen = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+    ImageDraw.Draw(sheen).rounded_rectangle([x + 14, y + 8, x + w - 14, y + 18], radius=6, fill=(255, 220, 170, 26))
+    bg.alpha_composite(sheen.filter(ImageFilter.GaussianBlur(3)))
+    # amber backlight behind each reading
+    lamps = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+    ld = ImageDraw.Draw(lamps)
+    for i in range(4):
+        cx = L.readout_centre(i)
+        ld.ellipse([cx - 120, y + 30, cx + 120, y + 80], fill=(255, 140, 40, 34))
+    bg.alpha_composite(lamps.filter(ImageFilter.GaussianBlur(18)))
+    rules = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rules)
+    for i in range(1, 4):                                   # gold dividers
+        dx = x + w * i / 4.0
+        rd.line([(dx, y + 14), (dx, y + 76)], fill=L.BRASS_LIGHT + (150,), width=2)
+    # decorative tuning scale
+    t0, t1, ty = x + 24, x + w - 24, L.STRIP_TICKS_Y
+    rd.line([(t0, ty), (t1, ty)], fill=(240, 170, 80, 150), width=1)
+    k = 0
+    xx = t0
+    while xx <= t1 + 0.1:
+        big = k % 5 == 0
+        rd.line([(xx, ty - (7 if big else 4)), (xx, ty)], fill=(246, 186, 96, 200 if big else 140), width=2 if big else 1)
+        xx += (t1 - t0) / 150.0
+        k += 1
+    bg.alpha_composite(rules)
+    for i, (title, unit) in enumerate(zip(L.READOUT_TITLES, L.READOUT_UNITS)):
+        cx = L.readout_centre(i)
+        t = text_image(title, 17, (246, 206, 140, 255), tracking=0.18, shadow=(0, 0, 0, 160))
+        bg.alpha_composite(t, (int(cx - t.size[0] / 2), y + 12))
+        vx, vy, vw, vh = L.readout_value_rect(i)
+        u = text_image(unit, 19, (255, 176, 80, 255), slant=0.0, semi=True, tracking=0.04)
+        bg.alpha_composite(u, (int(cx + L.READOUT_UNIT_X), int(vy + vh * 0.62 - u.size[1] / 2)))
+
+
+def make_lufs_background():
+    bg = Image.new('RGBA', (L.W, L.H), L.NAVY + (255,))
+    grid = Image.new('RGBA', (L.W, L.H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(grid)
+    for gx in range(0, L.W, 32):
+        gd.line([(gx, 0), (gx, L.H)], fill=(60, 64, 110, 18))
+    for gy in range(0, L.H, 32):
+        gd.line([(0, gy), (L.W, gy)], fill=(60, 64, 110, 18))
+    bg.alpha_composite(grid)
+    ornament(bg)
+    cx, cy, cw, ch = L.LUFS_CABINET
+    bg.alpha_composite(glow_rect(bg.size, L.LUFS_CABINET, 30, L.NEON, 10, 6, 170))
+    bg.alpha_composite(glow_rect(bg.size, L.LUFS_CABINET, 30, (255, 140, 60), 3, 3, 120))
+    wd = ImageChops.multiply(wood(cw, ch), vgrad(cw, ch, (255, 220, 190), (120, 80, 60)))
+    paste(bg, wd, rr_mask(cw, ch, (0, 0, cw, ch), 30), (cx, cy))
+    bg.alpha_composite(glow_rect(bg.size, (cx + 1, cy + 1, cw - 2, ch - 2), 29, (255, 120, 90), 0.7, 2, 230))
+    bg.alpha_composite(glow_rect(bg.size, (cx + 8, cy + 8, cw - 16, ch - 16), 24, L.BRASS, 0.5, 1, 140))
+    for i, (lx, ly) in enumerate(L.LUFS_LAMPS):              # CLIP captions under the side lamps
+        t = text_image('CLIP', 18, L.CREAM + (255,), tracking=0.06, shadow=(0, 0, 0, 200))
+        bg.alpha_composite(t, (int(lx + L.LAMP / 2 - t.size[0] / 2), ly + L.LAMP + 10))
+        t = text_image('L' if i == 0 else 'R', 16, (220, 190, 150, 255), shadow=(0, 0, 0, 200))
+        bg.alpha_composite(t, (int(lx + L.LAMP / 2 - t.size[0] / 2), ly - 26))
+    tuning_strip(bg)
+    # control cards
+    for key, r in L.LUFS_CARDS.items():
+        card(bg, r)
+    rules = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rules)
+    for key, (left, right) in L.LUFS_TITLES.items():
+        x, y, w, h = L.LUFS_CARDS[key]
+        rd.line([(x + L.LUFS_SPLIT, y + 18), (x + L.LUFS_SPLIT, y + h - 18)], fill=L.BRASS + (120,), width=2)
+        for title, (sx0, sx1) in ((left, (x, x + L.LUFS_SPLIT)), (right, (x + L.LUFS_SPLIT, x + w))):
+            t = text_image(title, 19, L.AMBER_TEXT + (255,), tracking=0.16)
+            bg.alpha_composite(t, (int((sx0 + sx1) / 2.0 - t.size[0] / 2), y + 22))
+        _, pill, _ = L.lufs_stepper(key)                      # inset value window between the arrows
+        px, py, pw, ph = pill
+        paste(bg, vgrad(pw, ph, (10, 10, 20), (26, 26, 44)), rr_mask(pw, ph, (0, 0, pw, ph), 12), (px, py))
+        bg.alpha_composite(glow_rect(bg.size, pill, 12, (110, 104, 160), 0.5, 2, 200))
+    tx, ty, tw, th = L.LUFS_CARDS['trim']
+    rd.line([(L.CLEAR_BUTTON[0] - 8, ty + 18), (L.CLEAR_BUTTON[0] - 8, ty + th - 18)], fill=L.BRASS + (120,), width=2)
+    bg.alpha_composite(rules)
+    vx, vy, vw, vh = L.LUFS_TRIM_VALUE
+    t = text_image('TRIM', 16, L.AMBER_TEXT + (255,), tracking=0.16)
+    bg.alpha_composite(t, (int(vx + vw / 2 - t.size[0] / 2), vy - 22))
+    return bg
+
+
 # ---------------------------------------------------------------------------- dial faces
 def draw_scale(face, dial, ox, oy, light):
     """Ticks, arc, red zone and numerals, drawn at SS into `face` (an RGBA at SS scale)."""
@@ -367,14 +461,15 @@ def lamp_caption(img, xy, text, side='right'):
     img.alpha_composite(plate, (tx, y + (L.LAMP - plate.size[1]) // 2))
 
 
-def make_face(mode, light):
+def make_face(mode, light, captions=True):
     cw, ch = L.CABINET_INNER[2], L.CABINET_INNER[3]
     img = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
     if mode == 'stereo':
         for i in range(2):
             draw_dial(img, L.stereo_dial(i), light)
-        lamp_caption(img, L.STEREO_LAMPS[0], 'CLIP')
-        lamp_caption(img, L.STEREO_LAMPS[1], 'CLIP', 'left')
+        if captions:
+            lamp_caption(img, L.STEREO_LAMPS[0], 'CLIP')
+            lamp_caption(img, L.STEREO_LAMPS[1], 'CLIP', 'left')
     else:
         draw_dial(img, L.mono_dial(), light)
         raise ValueError('mono view was retired in v0.2')
@@ -498,6 +593,23 @@ def button(w, h, label, style, on, size=21):
             grad = spectrum.resize(txt.size).convert('RGBA')
             grad.putalpha(txt.getchannel('A'))
             img.alpha_composite(grad, ((w - txt.size[0]) // 2, (h - txt.size[1]) // 2 + 1))
+    elif style == 'clear':
+        col = (255, 120, 112)
+        img.alpha_composite(glow_rect((w, h), (3, 3, w - 6, h - 6), r + 2, L.NEON, 3.5 if on else 2.5, 3, 230 if on else 170))
+        top, bot = ((120, 34, 40), (70, 16, 24)) if on else ((44, 22, 34), (26, 14, 24))
+        paste(img, vgrad(w - 8, h - 8, top, bot), rr_mask(w - 8, h - 8, (0, 0, w - 8, h - 8), r), (4, 4))
+        img.alpha_composite(glow_rect((w, h), (4, 4, w - 8, h - 8), r, col, 0.6, 2, 240))
+        put_text(img, label, size, (255, 236, 226, 255) if on else col + (255,), (w / 2.0, h / 2.0 + 1), tracking=0.12)
+    elif style == 'arrow':
+        paste(img, vgrad(w - 6, h - 6, (44, 46, 76) if not on else (255, 196, 110), (22, 23, 40) if not on else (214, 128, 40)),
+              rr_mask(w - 6, h - 6, (0, 0, w - 6, h - 6), r), (3, 3))
+        img.alpha_composite(glow_rect((w, h), (3, 3, w - 6, h - 6), r, L.BRASS, 0.6, 2, 230))
+        tri = Image.new('RGBA', (w * SS, h * SS), (0, 0, 0, 0))
+        cx, cy, k = w * SS / 2.0, h * SS / 2.0, 9 * SS
+        pts = [(cx - k * 0.6, cy), (cx + k * 0.5, cy - k), (cx + k * 0.5, cy + k)] if label == '<' else \
+              [(cx + k * 0.6, cy), (cx - k * 0.5, cy - k), (cx - k * 0.5, cy + k)]
+        ImageDraw.Draw(tri).polygon(pts, fill=(L.DARK_TEXT if on else L.AMBER_LIGHT) + (255,))
+        img.alpha_composite(tri.resize((w, h), Image.LANCZOS))
     elif style == 'bypass':
         if on:
             img.alpha_composite(glow_rect((w, h), (3, 3, w - 6, h - 6), 16, L.NEON, 5, 5, 230))
@@ -527,7 +639,6 @@ def make_controls():
         style = {'REACT': 'react', 'CYCLE': 'cycle'}.get(lab, 'seg')
         pair('light_%d' % i, L.LIGHT_BUTTONS[i], lab, style, size=24 if style != 'seg' else 19)
     pair('bypass', L.BYPASS_BUTTON, 'BYPASS', 'bypass', size=40)
-    pair('auto', L.AUTO_BUTTON, 'AUTO', size=22)
     for i, lab in enumerate(L.CLIP_LABELS):
         pair('clip_%d' % i, L.CLIP_BUTTONS[i], lab, size=18)
     for i, lab in enumerate(L.RATE_LABELS):
@@ -535,15 +646,18 @@ def make_controls():
     for i, (lab, name) in enumerate(zip(L.PALETTE_LABELS, L.PALETTE_ORDER)):
         pair('pal_%d' % i, L.PALETTE_BUTTONS[i], lab, 'pal:' + name, size=19)
 
-    # AUTO "listening" halo: 2 frames (off / amber glow), drawn under the AUTO button
-    ax, ay, aw, ah = L.AUTO_BUTTON
-    pad = L.AUTO_GLOW_PAD
-    gw, gh = aw + 2 * pad, ah + 2 * pad
-    strip = Image.new('RGBA', (gw, gh * 2), (0, 0, 0, 0))
-    halo = glow_rect((gw, gh), (pad - 1, pad - 1, aw + 2, ah + 2), 12, (255, 196, 90), 3.5, 6, 255)
-    halo.alpha_composite(glow_rect((gw, gh), (pad - 1, pad - 1, aw + 2, ah + 2), 12, (255, 240, 200), 1, 2, 255))
-    strip.alpha_composite(halo, (0, gh))
-    save(strip, 'auto_busy.png')
+    # LUFS tab: ON/OFF toggles, arrow keys (lit while pressed), CLEAR, RUN/HOLD
+    for name, card in (('lufs_auto', 'auto'), ('lufs_lim', 'limiter')):
+        _, _, w, h = L.lufs_toggle(card)
+        save(button(w, h, 'ON', 'seg', True, 24), name + '_on.png')
+        save(button(w, h, 'OFF', 'seg', False, 24), name + '_off.png')
+    lft, _, rgt = L.lufs_stepper('auto')
+    pair('arrow_l', lft, '<', 'arrow')
+    pair('arrow_r', rgt, '>', 'arrow')
+    pair('clear', L.CLEAR_BUTTON, 'CLEAR', 'clear', size=21)
+    _, _, w, h = L.HOLD_BUTTON
+    save(button(w, h, 'HOLD', 'seg', True, 21), 'hold_on.png')
+    save(button(w, h, 'RUN', 'seg', False, 21), 'hold_off.png')
 
     # phase correlation: PHASE caption + -1 .. +1 track with a glowing marker; frame 0 = no signal
     cx, cy, cw, ch = L.CORR
@@ -598,6 +712,9 @@ def make_controls():
     clear = Image.new('RGBA', (L.LAMP_HIT_W, L.LAMP + 8), (0, 0, 0, 0))
     save(clear, 'hit_on.png')
     save(clear, 'hit_off.png')
+    clear = Image.new('RGBA', L.LUFS_LAMP_HIT, (0, 0, 0, 0))
+    save(clear, 'hit_lufs_on.png')
+    save(clear, 'hit_lufs_off.png')
 
     # reference plates
     _, _, pw, ph = L.PLATE
@@ -695,7 +812,6 @@ def compose(bg, faces, mode, light_i, vus, cal=1, heat=0.0, clip=True, hue=0.0, 
         page.alpha_composite(img, (x + (w - img.size[0]) // 2, y + (h - img.size[1]) // 2))
     btn('peak', L.PEAK_BUTTON, True)
     btn('bypass', L.BYPASS_BUTTON, False)
-    btn('auto', L.AUTO_BUTTON, False)
     knob = Image.open(os.path.join(OUT, 'knob_trim.png'))
     page.alpha_composite(knob.crop((0, 63 * L.KNOB_SIZE, L.KNOB_SIZE, 64 * L.KNOB_SIZE)), L.KNOB[:2])
     tx, ty, tw, th = L.TRIM_VALUE
@@ -731,6 +847,68 @@ def setup_preview(sbg, clip=0, rate=1, pal=0, cal=1, light=3):
     ImageDraw.Draw(screen).text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))
     screen.alpha_composite(page, (0, L.SCREEN_TOP))
     screen.convert('RGB').save(os.path.join(L.PREVIEW_DIR, 'preview-setup.png'))
+
+
+def lufs_preview(lbg, faces, light_i=0, hue=0.0, out='preview-lufs.png', limiter=True):
+    """LUFS tab mock: AUTO + LIMITER on, readouts as in a mastering pass."""
+    page = lbg.copy()
+    light = L.LIGHT_ORDER[light_i]
+    fx, fy, fw, fh = L.LUFS_FACE
+    if light in L.GLOW_LIGHTS:
+        step = L.HUE_FIRST + int(round(hue * L.HUE_FRAMES)) % L.HUE_FRAMES
+        glow = Image.open(os.path.join(OUT, 'glow_stereo.png'))
+        gw, gh = glow.size[0], glow.size[1] // L.GLOW_FRAMES
+        page.alpha_composite(glow.crop((0, step * gh, gw, (step + 1) * gh)).resize((fw, fh), Image.BILINEAR), (fx, fy))
+        light = 'glow'
+    page.alpha_composite(faces[('lufs', light)].resize((fw, fh), Image.LANCZOS), (fx, fy))
+    for i, vu in enumerate((-1.5, -2.6)):
+        dial = L.stereo_dial(i)
+        f = round(L.fraction(vu) * (dial.frames - 1))
+        per = dial.frames // dial.sectors
+        k = min(f // per, dial.sectors - 1)
+        x0, y0, bw, bh = L.sector_box(dial, k)
+        strip = Image.open(os.path.join(OUT, L.needle_file('s', k)))
+        fr = strip.crop((0, (f - k * per + 1) * bh, bw, (f - k * per + 2) * bh))
+        r = L.lufs_rect((dial.window[0] + x0, dial.window[1] + y0, bw, bh))
+        page.alpha_composite(fr.resize(r[2:], Image.LANCZOS), r[:2])
+        mx, my, mw, mh = L.lufs_rect(L.max_label_rect(L.STEREO_WINDOWS[i]))
+        t = text_image('MAX %+.1f VU' % (vu + 2.1), 14, L.INK + (255,), slant=0.0, semi=True)
+        page.alpha_composite(t, (mx + mw - t.size[0], my + (mh - t.size[1]) // 2))
+    lamp = Image.open(os.path.join(OUT, 'lamp.png'))
+    for (x, y) in L.LUFS_LAMPS:
+        page.alpha_composite(lamp.crop((0, 0, L.LAMP, L.LAMP)), (x, y))
+    for i, val in enumerate(('-14.1', '-13.4', '-1.1', '2.4')):
+        vx, vy, vw, vh = L.readout_value_rect(i)
+        t = text_image(val, 40, (255, 168, 60, 255), slant=0.0)
+        g = t.filter(ImageFilter.GaussianBlur(4))
+        page.alpha_composite(g, (vx + vw - t.size[0], vy + (vh - t.size[1]) // 2))
+        page.alpha_composite(t, (vx + vw - t.size[0], vy + (vh - t.size[1]) // 2))
+    for rect, text, just in ((L.STATUS_RECT, 'AUTO IN RANGE', 'l'), (L.AUTO_GAIN_RECT, '+3.2 dB', 'l'),
+                             (L.MOMENTARY_RECT, 'M -12.8', 'c'), (L.ELAPSED_RECT, '02:34', 'r')):
+        t = text_image(text, 16, (246, 196, 120, 255), slant=0.0, semi=True)
+        x, y, w, h = rect
+        tx = x if just == 'l' else (x + (w - t.size[0]) // 2 if just == 'c' else x + w - t.size[0])
+        page.alpha_composite(t, (tx, y + (h - t.size[1]) // 2))
+    def btn(name, rect, on):
+        img = Image.open(os.path.join(OUT, name + ('_on.png' if on else '_off.png')))
+        page.alpha_composite(img, rect[:2])
+    btn('lufs_auto', L.lufs_toggle('auto'), True)
+    btn('lufs_lim', L.lufs_toggle('limiter'), limiter)
+    for card, val in (('auto', '-14.0 LUFS'), ('limiter', '-1.0 dBTP')):
+        lft, pill, rgt = L.lufs_stepper(card)
+        btn('arrow_l', lft, False)
+        btn('arrow_r', rgt, False)
+        put_text(page, val, 24, L.CREAM + (255,), (pill[0] + pill[2] / 2.0, pill[1] + pill[3] / 2.0), slant=0.0, semi=True)
+    knob = Image.open(os.path.join(OUT, 'knob_trim.png'))
+    page.alpha_composite(knob.crop((0, 63 * L.KNOB_SIZE, L.KNOB_SIZE, 64 * L.KNOB_SIZE)), L.LUFS_KNOB[:2])
+    vx, vy, vw, vh = L.LUFS_TRIM_VALUE
+    put_text(page, '0.0 dB', 26, L.CREAM + (255,), (vx + vw / 2.0, vy + vh / 2.0), slant=0.0, semi=True)
+    btn('clear', L.CLEAR_BUTTON, False)
+    btn('hold', L.HOLD_BUTTON, False)
+    screen = Image.new('RGBA', (L.W, 800), (34, 35, 44, 255))
+    ImageDraw.Draw(screen).text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))
+    screen.alpha_composite(page, (0, L.SCREEN_TOP))
+    screen.convert('RGB').save(os.path.join(L.PREVIEW_DIR, out))
 
 
 def cycle_gif(bg, faces):
@@ -777,12 +955,15 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     print('background'); bg = make_background(); save(bg, 'bg.png')
     sbg = make_setup_background(); save(sbg, 'bg_setup.png')
+    print('lufs background'); lbg = make_lufs_background(); save(lbg, 'bg_lufs.png')
     faces = {}
     for mode in ['stereo']:
         for light in L.STATIC_LIGHTS + ['glow']:     # 'glow' = window overlay above the React/Cycle glow strip
             print('face', mode, light)
             faces[(mode, light)] = make_face(mode, light)
             save(faces[(mode, light)], 'face_%s_%s.png' % (mode, light))
+            faces[('lufs', light)] = make_face(mode, light, captions=False)
+            save(faces[('lufs', light)], 'face_lufs_%s.png' % light)
     print('needles'); make_needles('s', L.stereo_dial(0))
     print('controls'); make_controls()
     print('glow strips'); make_glow()
@@ -798,6 +979,8 @@ def main():
     preview(bg, faces, 'stereo', 3, (-2.0, -3.0), out='preview-react-amber.png', heat=0.55, palette=2, corr=0.7)
     preview(bg, faces, 'stereo', 4, (3.0, 2.0), out='preview-flash.png', flash=True, corr=-0.6)
     setup_preview(sbg)
+    lufs_preview(lbg, faces)
+    lufs_preview(lbg, faces, light_i=4, hue=0.55, out='preview-lufs-cycle.png', limiter=False)
     print('react gif'); react_gif(bg, faces)
     print('cycle gif'); cycle_gif(bg, faces)
     print('decoded needle strips: %.1f MiB' % (L.decoded_needle_bytes() / 1048576.0))

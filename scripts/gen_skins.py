@@ -10,7 +10,12 @@ METER tab:
     chosen by the plugin-computed View parameter
   * needle sector filmstrips (4 per needle), clip lamps + RESET CLIP tap areas, plate,
     PHASE meter, MAX readouts
-  * control strip: PEAK | BYPASS | OUTPUT (AUTO, trim value, trim knob)
+  * control strip: PEAK | BYPASS | OUTPUT (trim value, trim knob)
+LUFS tab:
+  * the same dials at 0.8 scale (shared needle and glow strips; caption-free faces), clip lamps
+  * smoked-glass tuning strip: INTEGRATED | SHORT-TERM | TRUE PEAK MAX | GAIN REDUCTION
+    Labels, plus AUTO status / auto gain / momentary / elapsed
+  * AUTO + TARGET < > | LIMITER + CEILING < > | TRIM knob, CLEAR, RUN/HOLD
 SETUP tab: CALIBRATION | CLIP LEVEL, then LIGHT (STATIC | REACT + palette | CYCLE + rate).
 The plugin is stereo only; the retired mono parameters have no widgets.
 """
@@ -134,12 +139,6 @@ def main():
                       'colour': L.argb(L.CREAM), 'justification': 'horizontallyCentred verticallyCentred', 'case': 'Original'},
         'type': 'Value', 'handleName': P('Trim')}, L.TRIM_VALUE, show='Hide'))
 
-    # AUTO trim: listening halo (under), then the button
-    ax, ay, aw, ah = L.AUTO_BUTTON
-    pad = L.AUTO_GLOW_PAD
-    comps.append(filmstrip('auto busy', 'auto_busy.png', 2, P('Auto Busy'), (ax - pad, ay - pad, aw + 2 * pad, ah + 2 * pad)))
-    comps.append(button('auto', 'auto', 1, 1, P('Auto Trim'), L.AUTO_BUTTON))
-
     # phase correlation
     comps.append(filmstrip('phase', 'corr.png', L.CORR_STEPS + 1, P('Correlation'), L.CORR))
 
@@ -152,6 +151,54 @@ def main():
             'type': 'Value', 'handleName': P(param)}, L.max_label_rect(window), show='Hide'))
     max_label('max L', 'L Max', L.STEREO_WINDOWS[0])
     max_label('max R', 'R Max', L.STEREO_WINDOWS[1])
+
+    def label(name, param, r, size, colour, just, style='SemiBold'):
+        return entry(name, 'Label', {
+            'version': 1,
+            'textStyle': {'version': 1, 'font': {'version': 1, 'name': 'Titillium Web', 'style': style, 'height': float(size)},
+                          'colour': L.argb(colour), 'justification': just + ' verticallyCentred', 'case': 'Original'},
+            'type': 'Value', 'handleName': P(param)}, r, show='Hide')
+
+    # LUFS tab: the METER dials at LUFS_SCALE (same strips; scaled by the MPC to their bounds)
+    lufs = []
+    for li, light in enumerate(L.STATIC_LIGHTS):
+        lufs.append(image('lufs face %s' % light, 'face_lufs_%s.png' % light, L.LUFS_FACE, only=when('View', li, L.NUM_VIEWS)))
+    lufs.append(filmstrip('lufs glow', 'glow_stereo.png', L.GLOW_FRAMES, P('Glow'), L.LUFS_FACE, only=cond))
+    lufs.append(image('lufs face glow', 'face_lufs_glow.png', L.LUFS_FACE, only=cond))
+    for key, dial in (('L', L.stereo_dial(0)), ('R', L.stereo_dial(1))):
+        first, sectors, per = spec[key]
+        wx, wy = dial.window[0], dial.window[1]
+        for k in range(sectors):
+            x, y, w, h = L.sector_box(dial, k)
+            lufs.append(filmstrip('lufs %s needle %d' % (key, k + 1), L.needle_file('s', k), per + 1,
+                                  'Parameter %d' % (first + k), L.lufs_rect((wx + x, wy + y, w, h))))
+    for name, param, window in (('lufs max L', 'L Max', L.STEREO_WINDOWS[0]), ('lufs max R', 'R Max', L.STEREO_WINDOWS[1])):
+        lufs.append(label(name, param, L.lufs_rect(L.max_label_rect(window)), 14, L.INK, 'right'))
+    for i, name in enumerate(('L Clip', 'R Clip')):
+        x, y = L.LUFS_LAMPS[i]
+        lufs.append(filmstrip('side ' + name.lower(), 'lamp.png', 2, P(name), (x, y, L.LAMP, L.LAMP)))
+        lufs.append(button('lufs %s reset' % name.lower(), 'hit_lufs', 1, 1, P('Reset Clip'), L.lufs_lamp_hit(i)))
+    # tuning strip readouts
+    for i, param in enumerate(L.READOUT_PARAMS):
+        lufs.append(label('readout %s' % param.lower(), param, L.readout_value_rect(i), 40, L.READOUT_AMBER, 'right', 'Bold'))
+    lufs.append(label('auto state', 'Auto State', L.STATUS_RECT, 16, L.STATUS_AMBER, 'left'))
+    lufs.append(label('auto gain', 'Auto Gain', L.AUTO_GAIN_RECT, 16, L.STATUS_AMBER, 'left'))
+    lufs.append(label('momentary', 'Momentary', L.MOMENTARY_RECT, 16, L.STATUS_AMBER, 'horizontallyCentred'))
+    lufs.append(label('elapsed', 'Elapsed', L.ELAPSED_RECT, 16, L.STATUS_AMBER, 'right'))
+    # controls
+    lufs.append(button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('auto')))
+    lufs.append(button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('limiter')))
+    for card, value, down, up in (('auto', 'Target', 'Target Down', 'Target Up'), ('limiter', 'Ceiling', 'Ceiling Down', 'Ceiling Up')):
+        lft, pill, rgt = L.lufs_stepper(card)
+        lufs.append(button(down.lower(), 'arrow_l', 1, 1, P(down), lft))
+        lufs.append(label(value.lower() + ' value', value, pill, 24, L.CREAM, 'horizontallyCentred'))
+        lufs.append(button(up.lower(), 'arrow_r', 1, 1, P(up), rgt))
+    lufs.append(entry('lufs trim knob', 'Knob', {'version': 3, 'knobType': 'FilmStrip', 'filmStrip': 'knob_trim.png',
+                                                 'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
+                                                 'handleName': P('Trim')}, L.LUFS_KNOB, show='Hide', focus='Yes'))
+    lufs.append(label('lufs trim value', 'Trim', L.LUFS_TRIM_VALUE, 26, L.CREAM, 'horizontallyCentred'))
+    lufs.append(button('clear', 'clear', 1, 1, P('Clear'), L.CLEAR_BUTTON))
+    lufs.append(button('run hold', 'hold', 1, 1, P('Measure'), L.HOLD_BUTTON))
 
     def make_tab(name, key, bgimg, children):
         bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': bgimg}
@@ -175,12 +222,14 @@ def main():
     for i, r in enumerate(L.PALETTE_BUTTONS):
         setup.append(button('palette %d' % i, 'pal_%d' % i, i, len(L.PALETTE_BUTTONS), P('Palette'), r))
 
-    tabs = [make_tab('METER', 0, 'bg.png', comps), make_tab('SETUP', 1, 'bg_setup.png', setup)]
+    tabs = [make_tab('METER', 0, 'bg.png', comps), make_tab('LUFS', 1, 'bg_lufs.png', lufs),
+            make_tab('SETUP', 2, 'bg_setup.png', setup)]
 
     # Discrete steps for every choice/bool parameter a widget or IndexedEnabling depends on.
     reps = []
     for name in ('0 VU', 'Peak Hold', 'Light', 'Bypass', 'Reset Clip', 'View', 'L Clip', 'R Clip',
-                 'Auto Trim', 'Auto Busy', 'Clip Level', 'Cycle Rate', 'Palette'):
+                 'Clip Level', 'Cycle Rate', 'Palette', 'LUFS Auto', 'Limiter', 'Measure', 'Clear',
+                 'Target Down', 'Target Up', 'Ceiling Down', 'Ceiling Up'):
         p = BY_INDEX[IDX[name]]
         reps.append({'key': P(name), 'value': p['choices']})
 
@@ -197,13 +246,18 @@ def main():
     q2 = {'Q-Link %d' % i: -1 for i in range(1, 17)}
     for ql, name in ((13, '0 VU'), (14, 'Clip Level'), (15, 'Light'), (16, 'Palette'), (9, 'Cycle Rate')):
         q2['Q-Link %d' % ql] = IDX[name]
+    q3 = {'Q-Link %d' % i: -1 for i in range(1, 17)}   # LUFS tab (q2 is SETUP, now the third tab)
+    for ql, name in ((13, 'Target'), (14, 'Ceiling'), (15, 'Trim'), (16, 'LUFS Auto'), (9, 'Limiter'), (10, 'Measure')):
+        q3['Q-Link %d' % ql] = IDX[name]
     prog = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for i, name in enumerate(('Trim', 'Bypass', 'Peak Hold', '0 VU', 'Clip Level', 'Light', 'Palette', 'Cycle Rate')):
+    for i, name in enumerate(('Trim', 'Bypass', 'Peak Hold', '0 VU', 'Clip Level', 'Light', 'Palette', 'Cycle Rate',
+                              'LUFS Auto', 'Target', 'Limiter', 'Ceiling', 'Measure')):
         prog['Q-Link %d' % (i + 1)] = IDX[name]
     qlinks = {'version': 4, 'info': {'version': 1, 'type': 'CompleteDescription'},
               'Screen Mode Q-Links': {'version': 4, 'map': [
                   {'Tab': 1, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q},
-                  {'Tab': 2, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q2}]},
+                  {'Tab': 2, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q3},
+                  {'Tab': 3, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q2}]},
               'Program Mode Q-Links': prog}
 
     os.makedirs(L.SKINS, exist_ok=True)
@@ -211,7 +265,7 @@ def main():
         json.dump(tui, f, indent=1)
     with open(os.path.join(L.SKINS, 'Q-Links.json'), 'w') as f:
         json.dump(qlinks, f, indent=1)
-    print('gen_skins: %d widgets on METER, %d on SETUP' % (len(comps), len(setup)))
+    print('gen_skins: %d widgets on METER, %d on LUFS, %d on SETUP' % (len(comps), len(lufs), len(setup)))
 
 
 if __name__ == '__main__':
