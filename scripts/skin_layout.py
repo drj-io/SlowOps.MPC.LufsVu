@@ -143,11 +143,10 @@ CABINET_INNER = (30, 70, 1220, 368)            # region covered by the per-view 
 
 STRIP_Y, STRIP_H = 466, 150                    # METER control strip: PEAK | BYPASS | OUTPUT
 CARDS = {                                      # x, width (12 px gaps, 16 px page margins)
-    'peak':   (16, 300),
-    'bypass': (328, 420),
-    'output': (760, 504),
+    'peak':   (16, 400),
+    'bypass': (428, 836),
 }
-CARD_TITLES = {'peak': 'PEAK', 'output': 'OUTPUT'}
+CARD_TITLES = {'peak': 'PEAK'}                 # (TRIM lives on the LUFS tab)
 
 
 def card_rect(name):
@@ -158,9 +157,6 @@ def card_rect(name):
 PEAK_BUTTON = (CARDS['peak'][0] + (CARDS['peak'][1] - 150) // 2, STRIP_Y + 64, 150, 56)
 BYPASS_BUTTON = (CARDS['bypass'][0], STRIP_Y, CARDS['bypass'][1], STRIP_H)
 KNOB_SIZE = 76
-KNOB = (CARDS['output'][0] + CARDS['output'][1] - KNOB_SIZE - 40, STRIP_Y + 40, KNOB_SIZE, KNOB_SIZE)
-TRIM_CAPTION = (KNOB[0], KNOB[1] + KNOB_SIZE + 4, KNOB_SIZE, 20)       # burned "TRIM" under the knob
-TRIM_VALUE = ((CARDS['output'][0] + KNOB[0]) // 2 - 90, STRIP_Y + 64, 180, 48)   # live Label, centred left of the knob
 CORR = (800, 401, 190, 38)                                             # phase correlation strip (bottom rail)
 CORR_STEPS = 21                                                        # must match the plugin (0 = no signal)
 MAX_LABEL_W, MAX_LABEL_H = 150, 24                                     # MAX VU readouts (lower-right of each dial)

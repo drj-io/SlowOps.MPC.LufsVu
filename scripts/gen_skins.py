@@ -10,7 +10,7 @@ METER tab:
     chosen by the plugin-computed View parameter
   * needle sector filmstrips (4 per needle), clip lamps + RESET CLIP tap areas, plate,
     PHASE meter, MAX readouts
-  * control strip: PEAK | BYPASS | OUTPUT (trim value, trim knob)
+  * control strip: PEAK | BYPASS
 LUFS tab:
   * the same dials at 0.8 scale (shared needle and glow strips; caption-free faces), clip lamps
   * smoked-glass tuning strip: INTEGRATED | SHORT-TERM | TRUE PEAK MAX | GAIN REDUCTION
@@ -128,17 +128,9 @@ def main():
     for i in range(3):
         comps.append(image('plate %d' % i, 'plate_%d.png' % i, L.PLATE, only=when('0 VU', i, 3)))
 
-    # control strip: PEAK | BYPASS | OUTPUT
+    # control strip: PEAK | BYPASS (TRIM is on the LUFS tab)
     comps.append(button('peak', 'peak', 1, 1, P('Peak Hold'), L.PEAK_BUTTON))
     comps.append(button('bypass', 'bypass', 1, 1, P('Bypass'), L.BYPASS_BUTTON))
-    comps.append(entry('trim knob', 'Knob', {'version': 3, 'knobType': 'FilmStrip', 'filmStrip': 'knob_trim.png',
-                                             'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
-                                             'handleName': P('Trim')}, L.KNOB, show='Hide', focus='Yes'))
-    comps.append(entry('trim value', 'Label', {
-        'version': 1,
-        'textStyle': {'version': 1, 'font': {'version': 1, 'name': 'Titillium Web', 'style': 'SemiBold', 'height': 30.0},
-                      'colour': L.argb(L.CREAM), 'justification': 'horizontallyCentred verticallyCentred', 'case': 'Original'},
-        'type': 'Value', 'handleName': P('Trim')}, L.TRIM_VALUE, show='Hide'))
 
     # phase correlation
     comps.append(filmstrip('phase', 'corr.png', L.CORR_STEPS + 1, P('Correlation'), L.CORR))
@@ -246,7 +238,7 @@ def main():
 
     # Q-Links: top row follows the strip left to right; read-only displays and the trigger stay unassigned.
     q = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for ql, name in ((13, 'Peak Hold'), (14, 'Bypass'), (15, 'Trim')):
+    for ql, name in ((13, 'Peak Hold'), (14, 'Bypass')):
         q['Q-Link %d' % ql] = IDX[name]
     q2 = {'Q-Link %d' % i: -1 for i in range(1, 17)}
     for ql, name in ((13, '0 VU'), (14, 'Clip Level'), (15, 'Light'), (16, 'Palette'), (9, 'Cycle Rate')):

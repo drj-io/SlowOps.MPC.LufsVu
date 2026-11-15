@@ -41,7 +41,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 3 | Play program material | Needles move smoothly at about 30 FPS. No tearing, no blank frames, and no doubled needle at sector boundaries (watch around −10, −3, 0 and +1) |
 | 4 | Switch between METER and SETUP during playback | Both tabs draw fully; the meters keep moving when you return; audio is unaffected |
 | 5 | On SETUP, tap WARM / COOL / OFF, then return to METER | The correct face appears with no flash of another face |
-| 6 | Turn the TRIM knob and its Q-Link; tap BYPASS | Value label updates; the needle follows the trim; bypass returns the needle to the input level |
+| 6 | On LUFS, turn the TRIM knob and its Q-Link; tap BYPASS (on either tab) | Value label updates; the METER needles follow the trim; bypass returns them to the input level, and both BYPASS buttons light |
 | 7 | Clip the input (for example +6 dB trim on a hot loop) | The CLIP lamp lights and holds for about 2 s. Tapping the lamp clears it. Anti-phase clip still lights INPUT CLIP |
 | 8 | Check memory and responsiveness | Note memory % before and after opening the plugin and after the view swaps, the page open time, and whether touch and data-wheel response stays crisp while needles move |
 | 9 | Save the project, restart the MPC, reload | 0 VU, Peak, Light, Palette, Rate, Clip Level, Trim and Bypass are restored; needles start at rest |

@@ -13,8 +13,8 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
   - **React** makes the dials glow blue → red → purple as the program heats up, with filament-like warm-up and cool-down. ![react](docs/images/react.gif)
   - **Cycle** sweeps round the hue wheel once every two bars, locked to the MPC's tempo and song position. ![cycle](docs/images/cycle.gif)
 - **PHASE** correlation meter, **MAX** VU readouts, and a selectable **CLIP LEVEL** (0 / −0.3 / −1 / −3 dBFS).
-- **Three tabs.** METER has the dials, PHASE, MAX, CLIP lamps, PEAK, BYPASS and OUTPUT (TRIM). LUFS has the loudness readouts and the AUTO, TARGET, LIMITER, CEILING, TRIM, CLEAR and RUN/HOLD controls. SETUP has CALIBRATION, CLIP LEVEL and a LIGHT box grouped as STATIC (warm/cool/off), REACT with its palette, and CYCLE with its rate.
-- **Output TRIM** (±12 dB, smoothed; shared by METER and LUFS) and **BYPASS**. With TRIM at 0.0 dB (and AUTO off), or with Bypass on, the output is a **bit-exact** copy of the input. Every meter reads the output signal.
+- **Three tabs.** METER has the dials, PHASE, MAX, CLIP lamps, PEAK and BYPASS. LUFS has the loudness readouts and the AUTO, TARGET, TRIM, LIMITER, CEILING, CLEAR, RUN/HOLD and BYPASS controls. SETUP has CALIBRATION, CLIP LEVEL and a LIGHT box grouped as STATIC (warm/cool/off), REACT with its palette, and CYCLE with its rate.
+- **Output TRIM** (±12 dB, smoothed; on the LUFS tab) and **BYPASS** (on both tabs, one setting). With TRIM at 0.0 dB (and AUTO off), or with Bypass on, the output is a **bit-exact** copy of the input. Every meter reads the output signal.
 
 | METER | LUFS | SETUP |
 |---|---|---|

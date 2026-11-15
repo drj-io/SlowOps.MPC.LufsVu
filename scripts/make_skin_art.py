@@ -186,10 +186,7 @@ def make_background():
         rd.line([(x0, 421), (x1, 421)], fill=L.BRASS + (200,), width=2)
     bg.alpha_composite(rail)
 
-    for name in ('peak', 'output'):
-        card(bg, L.card_rect(name), L.CARD_TITLES[name])
-    tx, ty, tw, th = L.TRIM_CAPTION
-    put_text(bg, 'TRIM', 14, (196, 170, 150, 255), (tx + tw / 2.0, ty + th / 2.0), tracking=0.08)
+    card(bg, L.card_rect('peak'), L.CARD_TITLES['peak'])
     return bg
 
 
@@ -824,10 +821,6 @@ def compose(bg, faces, mode, light_i, vus, cal=1, heat=0.0, clip=True, hue=0.0, 
         page.alpha_composite(img, (x + (w - img.size[0]) // 2, y + (h - img.size[1]) // 2))
     btn('peak', L.PEAK_BUTTON, True)
     btn('bypass', L.BYPASS_BUTTON, False)
-    knob = Image.open(os.path.join(OUT, 'knob_trim.png'))
-    page.alpha_composite(knob.crop((0, 63 * L.KNOB_SIZE, L.KNOB_SIZE, 64 * L.KNOB_SIZE)), L.KNOB[:2])
-    tx, ty, tw, th = L.TRIM_VALUE
-    put_text(page, '0.0 dB', 30, L.CREAM + (255,), (tx + tw / 2.0, ty + th / 2.0), slant=0.0, semi=True)
     screen = Image.new('RGBA', (L.W, 800), (34, 35, 44, 255))
     hdr = ImageDraw.Draw(screen)
     hdr.text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))

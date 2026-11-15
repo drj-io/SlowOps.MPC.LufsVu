@@ -10,7 +10,6 @@ Signal chain: **in → AUTO gain + TRIM (one gain for L and R) → LIMITER → o
 |---|---|---|
 | **PEAK**: ON / OFF | 13 | ON holds a CLIP lamp for 2 s after a clipped sample. OFF lights it only while clipping happens. |
 | **BYPASS** | 14 | Output = input, bit for bit (AUTO, TRIM and LIMITER ignored). With LIMITER on the output is still delayed by its 3.2 ms so timing does not jump. The meters then show the input. |
-| **OUTPUT TRIM** ±12 dB | 15 | Output gain, smoothed over 20 ms (the same TRIM as on the LUFS tab). At 0.0 dB the audio passes through bit-exact. Turn it until the music hovers around 0 VU. |
 | CLIP lamps (tap) | – | Light when a sample reaches the CLIP LEVEL (sample peak, not true peak). Tap a lamp to reset it **and the MAX readings**. In REACT or CYCLE a clip also **flashes the dials white for one beat**. |
 | **MAX** readouts (in each dial) | – | The highest reading each needle has shown since the last lamp tap. It includes the needle's real overshoot. |
 | **PHASE** meter (bottom rail) | – | Stereo correlation: **+1** L and R identical (mono-safe), **0** wide or unrelated, **−1** cancels in mono (red zone). The marker parks when there's no signal. |
@@ -36,7 +35,7 @@ Layout: the readout strip holds the **measurement** controls at its left end (CL
 |---|---|---|
 | **AUTO**: ON / OFF | 16 | Off by default. Steers the **integrated** loudness towards TARGET with one gain for L and R. It listens to the **input** for at least 3 s of programme first (LEARNING), then moves at most 0.5 dB/s and only when it is more than 0.3 LU off. It holds during silence, never moves more than ±12 dB, and glides back to 0 dB when switched off. It never chases every bar: it follows the programme since CLEAR. It is a live best estimate; it cannot know what the rest of the song will do. |
 | **TARGET** ◀ ▶ | 13 | −23 … −9 LUFS in 0.5 steps (default −14). A starting point for music, not a platform rule. TARGET is unrelated to the VU CALIBRATION (0 VU = −18 dBFS is a different thing). |
-| **TRIM** | 15 | The same output TRIM as on METER. With AUTO on it is a deliberate offset: TARGET −14 with TRIM +1 gives about −13 LUFS. With AUTO off, turn TRIM up to drive the LIMITER on purpose. |
+| **TRIM** ±12 dB | 15 | Output gain, smoothed over 20 ms. At 0.0 dB (with AUTO off) the audio passes through bit-exact, and the METER needles show the trimmed output. With AUTO on it is a deliberate offset: TARGET −14 with TRIM +1 gives about −13 LUFS. With AUTO off, turn TRIM up to drive the LIMITER on purpose. |
 | **LIMITER**: ON / OFF | 9 | Off by default. A stereo-linked, true-peak-aware limiter (3 ms look-ahead, program-dependent release). It never changes the balance between L and R. **While on it adds about 3.2 ms of latency**, which is reported to the MPC. Switching it crossfades over 20 ms, so it does not click. |
 | **CEILING** ◀ ▶ | 14 | −6.0 … −0.1 dBTP in 0.1 steps (default −1.0). The highest true peak the LIMITER lets through. **With LIMITER off the ceiling does nothing**; watch for CLIP RISK. |
 | **CLEAR** | – | Restarts INTEGRATED, TRUE PEAK MAX, the elapsed time and AUTO's estimate. It never changes the gain, so the audio does not jump. Settings are untouched. |
