@@ -56,13 +56,18 @@ STATIC_LIGHTS = ['warm', 'cool', 'off']          # baked into whole face images
 # The dial glow follows program heat (plugin: Heat.hpp). The glow layer is a smooth gradient,
 # so it is rendered at reduced resolution and scaled up by the MPC; the printed scale, bezel
 # and legends sit above it on a full-resolution transparent overlay, so text stays crisp.
-# Glow strip frames (plugin "Glow" parameter): 0..23 React heat steps, 24..59 Cycle hue steps.
-HEAT_FRAMES = 24
-HUE_FRAMES = 36                                  # 10 degrees per step
-GLOW_FRAMES = HEAT_FRAMES + HUE_FRAMES
-REACT_GLOW_SCALE = 2                             # face glow strip at 1/2 resolution
+# Glow strip frames (plugin "Glow" parameter), must match SlowOpsVUMeter.cpp:
+#   3 React palettes x 16 heat steps, then 36 Cycle hue steps (10 degrees), then 1 clip-flash frame.
+HEAT_FRAMES = 16
+PALETTE_ORDER = ['thermal', 'neon', 'amber']     # matches the plugin's Palette choices
+HUE_FRAMES = 36
+HUE_FIRST = HEAT_FRAMES * len(PALETTE_ORDER)
+FLASH_FRAME = HUE_FIRST + HUE_FRAMES
+GLOW_FRAMES = FLASH_FRAME + 1
+REACT_GLOW_SCALE = 4                             # face glow strip at 1/4 resolution (edges hidden under the bezel)
 REACT_HALO_SCALE = 4                             # cabinet halo strip at 1/4 resolution
-HEAT_STOPS = [                                   # heat 0..1 -> backlight colour
+FLASH_COLOUR = (255, 250, 238)
+HEAT_STOPS = [                                   # Thermal: heat 0..1 -> backlight colour
     (0.00, (34, 78, 255)),                       # deep blue: quiet
     (0.22, (120, 186, 255)),                     # ice blue
     (0.42, (255, 176, 76)),                      # amber: getting warm
@@ -72,13 +77,34 @@ HEAT_STOPS = [                                   # heat 0..1 -> backlight colour
 ]
 
 
-def heat_colour(t):
+NEON_STOPS = [                                   # Neon: cyan -> violet -> hot magenta
+    (0.00, (0, 140, 170)),
+    (0.35, (0, 226, 255)),
+    (0.65, (140, 80, 255)),
+    (0.85, (255, 40, 220)),
+    (1.00, (255, 130, 240)),
+]
+AMBER_STOPS = [                                  # Amber: dim ember -> gold -> white-hot
+    (0.00, (130, 44, 12)),
+    (0.40, (232, 112, 24)),
+    (0.70, (255, 190, 60)),
+    (0.90, (255, 230, 150)),
+    (1.00, (255, 248, 226)),
+]
+PALETTE_STOPS = {'thermal': HEAT_STOPS, 'neon': NEON_STOPS, 'amber': AMBER_STOPS}
+
+
+def palette_colour(stops, t):
     t = max(0.0, min(1.0, t))
-    for (t0, c0), (t1, c1) in zip(HEAT_STOPS, HEAT_STOPS[1:]):
+    for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
         if t <= t1:
             k = (t - t0) / (t1 - t0)
             return tuple(int(round(c0[i] + (c1[i] - c0[i]) * k)) for i in range(3))
-    return HEAT_STOPS[-1][1]
+    return stops[-1][1]
+
+
+def heat_colour(t, palette='thermal'):
+    return palette_colour(PALETTE_STOPS[palette], t)
 
 
 def heat_for_step(step):
@@ -94,10 +120,12 @@ def hue_colour(t):
 
 def glow_frame_colour(f):
     """(colour, intensity 0..1) of a glow-strip frame."""
-    if f < HEAT_FRAMES:
-        h = heat_for_step(f)
-        return heat_colour(h), h
-    return hue_colour((f - HEAT_FRAMES) / float(HUE_FRAMES)), 0.8
+    if f < HUE_FIRST:
+        h = heat_for_step(f % HEAT_FRAMES)
+        return heat_colour(h, PALETTE_ORDER[f // HEAT_FRAMES]), h
+    if f < FLASH_FRAME:
+        return hue_colour((f - HUE_FIRST) / float(HUE_FRAMES)), 0.8
+    return FLASH_COLOUR, 1.0
 MODE_ORDER = ['stereo', 'mono']                # matches the plugin's Mode choices
 NUM_VIEWS = 10                                 # View = mode * 5 + light
 REF_LABELS = ['−20', '−18', '−14']  # matches the plugin's 0 VU choices
@@ -110,7 +138,7 @@ def argb(rgb, a=255):
 # ---------------------------------------------------------------------------- page regions
 ORNAMENT = (0, 0, W, 56)
 CABINET = (16, 58, 1248, 394)                  # walnut cabinet with neon edge
-CABINET_INNER = (30, 70, 1220, 370)            # region covered by the per-view face images
+CABINET_INNER = (30, 70, 1220, 368)            # region covered by the per-view face images (height divisible by 4)
 
 STRIP_Y, STRIP_H = 466, 150                    # control strip cards
 CARDS = {                                      # x, width (12 px gaps, 16 px page margins)
@@ -143,9 +171,43 @@ PEAK_BUTTON = segment_buttons('peak', 1)[0]
 LIGHT_BUTTONS = segment_buttons('light', 5)
 BYPASS_BUTTON = (CARDS['bypass'][0], STRIP_Y, CARDS['bypass'][1], STRIP_H)
 KNOB_SIZE = 76
-KNOB = (CARDS['output'][0] + CARDS['output'][1] - KNOB_SIZE - 12, STRIP_Y + 52, KNOB_SIZE, KNOB_SIZE)
-TRIM_CAPTION = (CARDS['output'][0] + 8, STRIP_Y + 60, 66, 24)        # burned "TRIM"
-TRIM_VALUE = (CARDS['output'][0] + 2, STRIP_Y + 88, 78, 30)           # live Label
+KNOB = (CARDS['output'][0] + CARDS['output'][1] - KNOB_SIZE - 12, STRIP_Y + 46, KNOB_SIZE, KNOB_SIZE)
+TRIM_CAPTION = (KNOB[0], KNOB[1] + KNOB_SIZE + 2, KNOB_SIZE, 20)       # burned "TRIM" under the knob
+AUTO_BUTTON = (CARDS['output'][0] + 12, STRIP_Y + 54, 62, 28)         # AUTO trim trigger
+AUTO_GLOW_PAD = 7                                                      # listening halo around it
+TRIM_VALUE = (CARDS['output'][0] + 2, STRIP_Y + 92, 82, 30)            # live Label
+CORR = (800, 401, 190, 38)                                             # phase correlation strip (bottom rail)
+CORR_STEPS = 21                                                        # must match the plugin (0 = no signal)
+MAX_LABEL_W, MAX_LABEL_H = 150, 24                                     # MAX VU readouts (lower-right of each dial)
+
+
+def max_label_rect(window):
+    x, y, w, h = window
+    return (x + w - MAX_LABEL_W - 34, y + h - MAX_LABEL_H - 16, MAX_LABEL_W, MAX_LABEL_H)
+
+
+# ---------------------------------------------------------------------------- SETUP tab
+SETUP_CARDS = {                                  # x, y, w, h
+    'clip':    (16, 70, 400, 150),
+    'rate':    (440, 70, 400, 150),
+    'palette': (864, 70, 400, 150),
+}
+SETUP_TITLES = {'clip': 'CLIP LEVEL', 'rate': 'CYCLE RATE', 'palette': 'REACT PALETTE'}
+SETUP_HELP = (16, 244, 1248, 368)
+
+
+def setup_buttons(card, n, pad=18, gap=10):
+    x, y, w, h = SETUP_CARDS[card]
+    bw = (w - 2 * pad - (n - 1) * gap) // n
+    return [(x + pad + i * (bw + gap), y + 72, bw, 52) for i in range(n)]
+
+
+CLIP_BUTTONS = setup_buttons('clip', 4)
+RATE_BUTTONS = setup_buttons('rate', 4)
+PALETTE_BUTTONS = setup_buttons('palette', 3)
+CLIP_LABELS = ['0 dBFS', '\u22120.3', '\u22121', '\u22123']
+RATE_LABELS = ['1 BAR', '2 BARS', '4 BARS', '8 BARS']
+PALETTE_LABELS = ['THERMAL', 'NEON', 'AMBER']
 HALO = (0, 40, 1280, 432)                      # React cabinet halo region (1/4-res strip)
 
 # ---------------------------------------------------------------------------- dials

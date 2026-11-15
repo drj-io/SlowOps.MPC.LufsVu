@@ -88,6 +88,46 @@
      "Off",
      "On"
     ]
+   },
+   {
+    "key": "Parameter 29",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 30",
+    "value": [
+     "Off",
+     "On"
+    ]
+   },
+   {
+    "key": "Parameter 35",
+    "value": [
+     "0 dBFS",
+     "-0.3 dBFS",
+     "-1 dBFS",
+     "-3 dBFS"
+    ]
+   },
+   {
+    "key": "Parameter 36",
+    "value": [
+     "1 Bar",
+     "2 Bars",
+     "4 Bars",
+     "8 Bars"
+    ]
+   },
+   {
+    "key": "Parameter 37",
+    "value": [
+     "Thermal",
+     "Neon",
+     "Amber"
+    ]
    }
   ],
   "info": {
@@ -130,7 +170,7 @@
          "imageType": "FilmStrip",
          "colour": "0",
          "image": "glow_halo.png",
-         "numFrames": 60,
+         "numFrames": 85,
          "handleName": "Parameter 28"
         }
        },
@@ -173,7 +213,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/0/10/Parameter 8"
         ]
@@ -202,7 +242,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/1/10/Parameter 8"
         ]
@@ -231,7 +271,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/2/10/Parameter 8"
         ]
@@ -248,7 +288,7 @@
          "imageType": "FilmStrip",
          "colour": "0",
          "image": "glow_stereo.png",
-         "numFrames": 60,
+         "numFrames": 85,
          "handleName": "Parameter 28"
         }
        },
@@ -262,7 +302,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "RangedEnabling/3/4/10/Parameter 8"
         ]
@@ -291,7 +331,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "RangedEnabling/3/4/10/Parameter 8"
         ]
@@ -320,7 +360,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/5/10/Parameter 8"
         ]
@@ -349,7 +389,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/6/10/Parameter 8"
         ]
@@ -378,7 +418,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/7/10/Parameter 8"
         ]
@@ -395,7 +435,7 @@
          "imageType": "FilmStrip",
          "colour": "0",
          "image": "glow_mono.png",
-         "numFrames": 60,
+         "numFrames": 85,
          "handleName": "Parameter 28"
         }
        },
@@ -409,7 +449,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "RangedEnabling/8/9/10/Parameter 8"
         ]
@@ -438,7 +478,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 370",
+        "bounds": "30 70 1220 368",
         "additionalInvalidatingHandles": [
          "RangedEnabling/8/9/10/Parameter 8"
         ]
@@ -1590,7 +1630,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1176 518 76 76"
+        "bounds": "1176 512 76 76"
        }
       },
       {
@@ -1627,7 +1667,559 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1104 554 78 30"
+        "bounds": "1104 558 82 30"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "auto busy",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "auto_busy.png",
+         "numFrames": 2,
+         "handleName": "Parameter 30"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1107 513 76 42"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "auto",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "auto_on.png",
+         "offImage": "auto_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 29",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1114 520 62 28"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "phase",
+        "type": "Image",
+        "data": {
+         "version": 2,
+         "imageType": "FilmStrip",
+         "colour": "0",
+         "image": "corr.png",
+         "numFrames": 22,
+         "handleName": "Parameter 31"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Show",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "800 401 190 38"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "max L",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 17.0
+          },
+          "colour": "ff18120e",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 32"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "436 344 150 24",
+        "additionalInvalidatingHandles": [
+         "IndexedEnabling/0/2/Parameter 1"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "max R",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 17.0
+          },
+          "colour": "ff18120e",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 33"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1042 344 150 24",
+        "additionalInvalidatingHandles": [
+         "IndexedEnabling/0/2/Parameter 1"
+        ]
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "max M",
+        "type": "Label",
+        "data": {
+         "version": 1,
+         "textStyle": {
+          "version": 1,
+          "font": {
+           "version": 1,
+           "name": "Titillium Web",
+           "style": "SemiBold",
+           "height": 17.0
+          },
+          "colour": "ff18120e",
+          "justification": "right verticallyCentred",
+          "case": "Original"
+         },
+         "type": "Value",
+         "handleName": "Parameter 34"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 2,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1042 344 150 24",
+        "additionalInvalidatingHandles": [
+         "IndexedEnabling/1/2/Parameter 1"
+        ]
+       }
+      }
+     ]
+    },
+    "qlinkBoundsData": []
+   },
+   {
+    "version": 1,
+    "tabName": "SETUP",
+    "fnKeyIndex": 1,
+    "fnKeySubIndex": 0,
+    "componentDefinition": {
+     "version": 2,
+     "actions": [],
+     "backgroundData": {
+      "version": 1,
+      "focussed": {
+       "version": 1,
+       "colour": "ff11121f",
+       "image": "bg_setup.png"
+      },
+      "unfocussed": {
+       "version": 1,
+       "colour": "ff11121f",
+       "image": "bg_setup.png"
+      }
+     },
+     "ignoreMousePresses": false,
+     "disableCoarseDataWheel": false,
+     "componentsData": [
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "clip level 0",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "clip_0_on.png",
+         "offImage": "clip_0_off.png",
+         "buttonId": 0,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 35",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "34 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "clip level 1",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "clip_1_on.png",
+         "offImage": "clip_1_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 35",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "127 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "clip level 2",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "clip_2_on.png",
+         "offImage": "clip_2_off.png",
+         "buttonId": 2,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 35",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "220 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "clip level 3",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "clip_3_on.png",
+         "offImage": "clip_3_off.png",
+         "buttonId": 3,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 35",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "313 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "cycle rate 0",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "rate_0_on.png",
+         "offImage": "rate_0_off.png",
+         "buttonId": 0,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 36",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "458 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "cycle rate 1",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "rate_1_on.png",
+         "offImage": "rate_1_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 36",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "551 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "cycle rate 2",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "rate_2_on.png",
+         "offImage": "rate_2_off.png",
+         "buttonId": 2,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 36",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "644 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "cycle rate 3",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "rate_3_on.png",
+         "offImage": "rate_3_off.png",
+         "buttonId": 3,
+         "numButtonsInGroup": 4,
+         "handleName": "Parameter 36",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "737 142 83 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "palette 0",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "pal_0_on.png",
+         "offImage": "pal_0_off.png",
+         "buttonId": 0,
+         "numButtonsInGroup": 3,
+         "handleName": "Parameter 37",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "882 142 114 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "palette 1",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "pal_1_on.png",
+         "offImage": "pal_1_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 3,
+         "handleName": "Parameter 37",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1006 142 114 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "palette 2",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "pal_2_on.png",
+         "offImage": "pal_2_off.png",
+         "buttonId": 2,
+         "numButtonsInGroup": 3,
+         "handleName": "Parameter 37",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1130 142 114 52"
        }
       }
      ]

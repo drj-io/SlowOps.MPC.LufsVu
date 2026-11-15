@@ -80,7 +80,9 @@ def main():
     comps = []
 
     glow = IDX['Glow']
-    if len(BY_INDEX[glow]['choices']) != L.GLOW_FRAMES:
+    # host_sim only lists the steps of small int ranges; when it does, they must match. The frame
+    # layout itself is pinned by scenario_host (palette offsets, hue range, flash = last frame).
+    if BY_INDEX[glow]['choices'] and len(BY_INDEX[glow]['choices']) != L.GLOW_FRAMES:
         sys.exit('gen_skins: plugin Glow has %d steps, skin_layout.GLOW_FRAMES is %d'
                  % (len(BY_INDEX[glow]['choices']), L.GLOW_FRAMES))
     nl = len(L.LIGHT_ORDER)
@@ -143,17 +145,50 @@ def main():
                       'colour': L.argb(L.CREAM), 'justification': 'horizontallyCentred verticallyCentred', 'case': 'Original'},
         'type': 'Value', 'handleName': P('Trim')}, L.TRIM_VALUE, show='Hide'))
 
-    bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': 'bg.png'}
-    tab = {'version': 1, 'tabName': 'METER', 'fnKeyIndex': 0, 'fnKeySubIndex': 0,
-           'componentDefinition': {'version': 2, 'actions': [],
-                                   'backgroundData': {'version': 1, 'focussed': bg, 'unfocussed': bg},
-                                   'ignoreMousePresses': False, 'disableCoarseDataWheel': False,
-                                   'componentsData': comps},
-           'qlinkBoundsData': []}
+    # AUTO trim: listening halo (under), then the button
+    ax, ay, aw, ah = L.AUTO_BUTTON
+    pad = L.AUTO_GLOW_PAD
+    comps.append(filmstrip('auto busy', 'auto_busy.png', 2, P('Auto Busy'), (ax - pad, ay - pad, aw + 2 * pad, ah + 2 * pad)))
+    comps.append(button('auto', 'auto', 1, 1, P('Auto Trim'), L.AUTO_BUTTON))
+
+    # phase correlation (both views)
+    comps.append(filmstrip('phase', 'corr.png', L.CORR_STEPS + 1, P('Correlation'), L.CORR))
+
+    # MAX VU readouts in each dial's lower-right corner
+    def max_label(name, param, window, mode_choice):
+        comps.append(entry(name, 'Label', {
+            'version': 1,
+            'textStyle': {'version': 1, 'font': {'version': 1, 'name': 'Titillium Web', 'style': 'SemiBold', 'height': 17.0},
+                          'colour': L.argb(L.INK), 'justification': 'right verticallyCentred', 'case': 'Original'},
+            'type': 'Value', 'handleName': P(param)}, L.max_label_rect(window), show='Hide', only=when('Mode', mode_choice, 2)))
+    max_label('max L', 'L Max', L.STEREO_WINDOWS[0], 0)
+    max_label('max R', 'R Max', L.STEREO_WINDOWS[1], 0)
+    max_label('max M', 'M Max', L.MONO_WINDOW, 1)
+
+    def make_tab(name, key, bgimg, children):
+        bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': bgimg}
+        return {'version': 1, 'tabName': name, 'fnKeyIndex': key, 'fnKeySubIndex': 0,
+                'componentDefinition': {'version': 2, 'actions': [],
+                                        'backgroundData': {'version': 1, 'focussed': bg, 'unfocussed': bg},
+                                        'ignoreMousePresses': False, 'disableCoarseDataWheel': False,
+                                        'componentsData': children},
+                'qlinkBoundsData': []}
+
+    # SETUP tab
+    setup = []
+    for i, r in enumerate(L.CLIP_BUTTONS):
+        setup.append(button('clip level %d' % i, 'clip_%d' % i, i, len(L.CLIP_BUTTONS), P('Clip Level'), r))
+    for i, r in enumerate(L.RATE_BUTTONS):
+        setup.append(button('cycle rate %d' % i, 'rate_%d' % i, i, len(L.RATE_BUTTONS), P('Cycle Rate'), r))
+    for i, r in enumerate(L.PALETTE_BUTTONS):
+        setup.append(button('palette %d' % i, 'pal_%d' % i, i, len(L.PALETTE_BUTTONS), P('Palette'), r))
+
+    tabs = [make_tab('METER', 0, 'bg.png', comps), make_tab('SETUP', 1, 'bg_setup.png', setup)]
 
     # Discrete steps for every choice/bool parameter a widget or IndexedEnabling depends on.
     reps = []
-    for name in ('Mode', '0 VU', 'Peak Hold', 'Light', 'Bypass', 'Reset Clip', 'View', 'L Clip', 'R Clip', 'Input Clip'):
+    for name in ('Mode', '0 VU', 'Peak Hold', 'Light', 'Bypass', 'Reset Clip', 'View', 'L Clip', 'R Clip', 'Input Clip',
+                 'Auto Trim', 'Auto Busy', 'Clip Level', 'Cycle Rate', 'Palette'):
         p = BY_INDEX[IDX[name]]
         reps.append({'key': P(name), 'value': p['choices']})
 
@@ -161,17 +196,22 @@ def main():
                         'componentDefinitions': {'version': 2, 'importFiles': [], 'localComponentDefinitions': []},
                         'replacementStrings': reps,
                         'info': {'version': 1, 'type': 'CompleteDescription'},
-                        'tabs': [tab]}}
+                        'tabs': tabs}}
 
     # Q-Links: top row follows the strip left to right; read-only displays and the trigger stay unassigned.
     q = {'Q-Link %d' % i: -1 for i in range(1, 17)}
     for ql, name in ((13, 'Mode'), (14, '0 VU'), (15, 'Peak Hold'), (16, 'Light'), (9, 'Bypass'), (10, 'Trim')):
         q['Q-Link %d' % ql] = IDX[name]
+    q2 = {'Q-Link %d' % i: -1 for i in range(1, 17)}
+    for ql, name in ((13, 'Clip Level'), (14, 'Cycle Rate'), (15, 'Palette')):
+        q2['Q-Link %d' % ql] = IDX[name]
     prog = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for i, name in enumerate(('Mode', '0 VU', 'Peak Hold', 'Light', 'Bypass', 'Trim')):
+    for i, name in enumerate(('Mode', '0 VU', 'Peak Hold', 'Light', 'Bypass', 'Trim', 'Clip Level', 'Cycle Rate', 'Palette')):
         prog['Q-Link %d' % (i + 1)] = IDX[name]
     qlinks = {'version': 4, 'info': {'version': 1, 'type': 'CompleteDescription'},
-              'Screen Mode Q-Links': {'version': 4, 'map': [{'Tab': 1, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q}]},
+              'Screen Mode Q-Links': {'version': 4, 'map': [
+                  {'Tab': 1, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q},
+                  {'Tab': 2, 'SubTab': 1, 'Bank Direction': 'Column', 'Q-Links': q2}]},
               'Program Mode Q-Links': prog}
 
     os.makedirs(L.SKINS, exist_ok=True)
@@ -179,7 +219,7 @@ def main():
         json.dump(tui, f, indent=1)
     with open(os.path.join(L.SKINS, 'Q-Links.json'), 'w') as f:
         json.dump(qlinks, f, indent=1)
-    print('gen_skins: %d widgets on METER' % len(comps))
+    print('gen_skins: %d widgets on METER, %d on SETUP' % (len(comps), len(setup)))
 
 
 if __name__ == '__main__':

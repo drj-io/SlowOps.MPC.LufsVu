@@ -10,6 +10,9 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 - **LIGHT**: Warm, Cool, Off, **React** or **Cycle**.
   - **React** makes the dials and cabinet glow blue → red → purple as the program heats up, with filament-like warm-up and cool-down. ![react](docs/images/react.gif)
   - **Cycle** sweeps round the hue wheel once every two bars, locked to the MPC's tempo and song position. ![cycle](docs/images/cycle.gif)
+- **AUTO trim**: one tap, 3 s of listening, and TRIM is set so the music averages 0 VU.
+- **PHASE** correlation meter, **MAX** VU readouts, and a selectable **CLIP LEVEL** (0 / −0.3 / −1 / −3 dBFS).
+- A **SETUP** tab holds CLIP LEVEL, CYCLE RATE (1/2/4/8 bars) and REACT PALETTE (Thermal / Neon / Amber), plus a short help panel.
 - **Output TRIM** (±12 dB, smoothed) and **BYPASS**. At 0.0 dB, or with Bypass on, the output is a **bit-exact** copy of the input. The meters read the output signal.
 
 | Stereo | Mono |
@@ -22,8 +25,8 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 
 | | |
 |---|---|
-| Core engine (ballistics, calibration, mono sum, clip, trim, React heat, Cycle hue) | Tested on desktop (`core_tests`, 61 checks) |
-| Real plugin binary through the VST2 ABI | Tested on desktop (`host_sim` and `scenario_host`, 52 checks) |
+| Core engine (ballistics, calibration, mono sum, clip, trim, React heat, Cycle hue, auto trim, correlation) | Tested on desktop (`core_tests`, 77 checks) |
+| Real plugin binary through the VST2 ABI | Tested on desktop (`host_sim` 20 and `scenario_host` 77 checks) |
 | Skin JSON / assets consistency | Tested on desktop (`check_skins.py`) |
 | **Needle animation, view switching and memory on an MPC** | **Not yet tested.** See `docs/SPIKE.md` |
 

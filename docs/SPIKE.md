@@ -22,7 +22,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 4. **Transparent tap areas.** Transparent Buttons over the CLIP lamps fire the `Reset Clip` trigger.
 
 5. **React and Cycle lighting.**
-   - A 60-step `Glow` parameter (24 heat steps, then 36 hue steps) drives three filmstrips: a cabinet halo strip drawn at 1/4 size and two face-glow strips drawn at 1/2 size.
+   - An 85-step `Glow` parameter drives three filmstrips: a cabinet halo strip and two face-glow strips, all drawn at 1/4 size. The steps are 3 palettes × 16 heat steps, then 36 hue steps, then 1 white clip-flash frame. The glow bleeds 10 px under the bezel so its soft edge is hidden.
    - The MPC must scale them up to their bounds. It is not yet known whether it scales filmstrip frames, or how smoothly.
    - The glow sits under a full-resolution transparent overlay (bezel, scale, legends).
 
@@ -42,11 +42,15 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 10 | Run two instances on different tracks in different modes | Independent |
 | 11 | Set LIGHT to REACT and play quiet, then loud, then stop | The dials and halo glow blue when quiet, red near 0 VU and purple when pinned, then fade back to blue over about a second. The glow fills the dial windows exactly; there are no blocky edges or misaligned frames, and the printed scale stays crisp |
 | 12 | Set LIGHT to CYCLE; play a sequence at 120 BPM, then stop; change the tempo and time signature | One trip round the colour wheel per 2 bars, the same colour on the same beat every phrase. Pressing Play glides onto the beat. Cycling continues at the tempo when stopped |
+| 13 | Play a loop at about −6 VU and tap AUTO | The button glows for about 3 s, TRIM jumps to about +6.0 dB, the needles then sit around 0 VU. A second tap during listening cancels |
+| 14 | Play mono material, then wide stereo, then flip one channel's polarity | PHASE marker near +1, then near 0, then in the red near −1. With no signal the marker parks |
+| 15 | Push the meter, then tap a CLIP lamp | MAX shows the highest reading (in each dial's lower-right corner) and clears on the tap. Set CLIP LEVEL to −1 on SETUP: a −0.5 dBFS peak now lights CLIP |
+| 16 | Open the SETUP tab: try every CLIP LEVEL, CYCLE RATE and PALETTE button, and Q-Links 13–15 | Settings apply on METER. In CYCLE, a clip flashes the cabinet white for one beat |
 
 ## If something fails
 
 - **Sector boundary flicker or a doubled needle.** Try 2 stereo / 4 mono sectors (bigger sprites), or blank first and show second. Both are one-line changes in `SlowOpsVUMeter.cpp` and `skin_layout.py`.
 - **Memory too high.** Use 96 or 64 frames per needle, or narrower sectors. `check_skins.py` prints the decoded budget.
 - **IndexedEnabling with 6 steps is unreliable.** Split `View` into Mode-gated face images plus a Light-gated overlay.
-- **React strips are not scaled, or look blocky.** Render the glow at full size with fewer steps (12 steps of 1220×370 ≈ 21 MiB per mode) by setting `REACT_GLOW_SCALE = 1`.
+- **Glow strips are not scaled, or look blocky.** Set `REACT_GLOW_SCALE = 2` in `skin_layout.py` (about +40 MiB). If memory then gets tight, drop to two palettes.
 - **Conditional swap unusable.** Last resort is two tabs (STEREO, MONO) with both views metering continuously. Document this as a compromise.

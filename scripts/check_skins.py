@@ -134,6 +134,8 @@ def main():
 
     mib = L.decoded_needle_bytes() / 1048576.0
     all_mib = decoded[0] / 1048576.0
+    if all_mib > 160:
+        fail('all decoded images %.1f MiB exceed the 160 MiB ceiling' % all_mib)
     if mib > 100:
         fail('decoded needle strips %.1f MiB exceed the 100 MiB budget' % mib)
     if errors:
