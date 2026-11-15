@@ -1,0 +1,16 @@
+{
+  "name": "VU Meter",
+  "manufacturer": "Slow Ops",
+  "version": "0.1.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "SoVM",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/slow-ops-vu-meter-arm32.so",
+  "file64": "VST/slow-ops-vu-meter-arm64.so",
+  "description": "Analog-style VU metering with dual stereo and full-width summed mono views, sample-peak clip lamps and an output trim. At 0.0 dB trim the audio passes through unchanged.",
+  "author": "Slow Ops",
+  "license": "MIT"
+}
