@@ -1,13 +1,14 @@
 // Slow Ops VU Meter: thin mpc::Plugin adapter around slowops::vumeter::VuEngine.
 //
 // Audio: in -> output trim (smoothed; bit-exact copy at 0.0 dB or Bypass) -> out.
-// Meters: L, R and the true mono sum M = 0.5*(L+R) run continuously on the output signal.
+// Meters: L and R needles on the output signal (stereo only; the v0.1 MONO view was retired in
+// v0.2 -- its parameter slots stay so saved projects and indices remain valid, but are unused).
 //
 // Display: each needle is drawn by several "sector" filmstrips, each covering a slice of the
 // sweep (a small transparent sprite instead of one face-sized sprite, which keeps decoded
 // image memory low). Frame 0 of every sector strip is blank; exactly one sector of a needle
-// shows a needle at any time. Only the visible view's displays are published, at most 30
-// times per second and only when a value actually changes.
+// shows a needle at any time. Displays are published at most 30 times per second and only
+// when a value actually changes.
 #include "mpc_plugin.h"
 #include "../../core/include/slowops/vumeter/VuEngine.hpp"
 #include "../../core/include/slowops/vumeter/Heat.hpp"
@@ -62,7 +63,7 @@ public:
     enum : int
     {
         kReserved = 0,   // the MPC nudges index 0 on every prepare, so it does nothing
-        kMode,           // Stereo / Mono
+        kMode,           // retired (was Stereo / Mono); always stereo
         kRef,            // -20 / -18 / -14 dBFS
         kPeak,           // Off / On (2 s hold)
         kLight,          // Warm / Cool / Off / React / Cycle (cosmetic). React colours the dial by program
@@ -74,10 +75,10 @@ public:
         kView,           // mode*5 + light: selects the face artwork
         kClipL,
         kClipR,
-        kClipIn,         // L or R clipped (shown in MONO)
+        kClipIn,         // retired (MONO input clip)
         kNeedleL0,                                   // L sectors
         kNeedleR0 = kNeedleL0 + kStereoSectors,      // R sectors
-        kNeedleM0 = kNeedleR0 + kStereoSectors,      // mono sectors
+        kNeedleM0 = kNeedleR0 + kStereoSectors,      // retired mono sectors
         kGlow = kNeedleM0 + kMonoSectors,            // React/Cycle glow frame 0..kGlowFrames-1
         // ---- v0.2 (appended) ----
         kAutoTrim,       // one-shot trigger: listen 3 s, then set Trim so the program averages 0 VU
@@ -85,7 +86,7 @@ public:
         kCorr,           // display: phase correlation frame (0 = no signal, 1..21 = -1..+1)
         kMaxL,           // display: highest VU since the last reset (lamp tap)
         kMaxR,
-        kMaxM,
+        kMaxM,           // retired (MONO max)
         kClipThr,        // CLIP threshold 0 / -0.3 / -1 / -3 dBFS
         kCycleBars,      // Cycle light: 1 / 2 / 4 / 8 bars per trip round the hue wheel
         kPalette,        // React light colours: Thermal / Neon / Amber
@@ -97,7 +98,9 @@ public:
         mpc::Param reserved = mpc::floatParam("reserved", "Reserved", 0.0f, 1.0f, 0.0f);
         reserved.automatable = false;
         addParam(reserved);
-        addParam(mpc::choiceParam("mode", "Mode", { "Stereo", "Mono" }, 0));
+        mpc::Param mode = mpc::choiceParam("mode", "Unused", { "Stereo", "Mono" }, 0);   // retired slot
+        mode.automatable = false;
+        addParam(mode);
         addParam(mpc::choiceParam("ref", "0 VU", { kRefNames[0], kRefNames[1], kRefNames[2] }, 1));
         addParam(mpc::choiceParam("peak", "Peak Hold", { "Off", "On" }, 1));
         addParam(mpc::choiceParam("light", "Light", { kLightNames[0], kLightNames[1], kLightNames[2], kLightNames[3], kLightNames[4] }, 0));
@@ -166,7 +169,6 @@ public:
         flashLeft_ = 0;
         lastHits_ = engine_.clipHits();
         displayAge_ = 0;
-        lastMode_ = getInt(kMode);   // a loaded mode is not a view switch; the next tick refreshes it
         if (getNormalised(kResetClip) >= 0.5f) setValue(kResetClip, 0.0f);
         if (getNormalised(kAutoTrim) >= 0.5f) setValue(kAutoTrim, 0.0f);
         publishView();
@@ -235,10 +237,8 @@ public:
         }
 
         displayAge_ += n;
-        const int mode = getInt(kMode);
-        if (displayAge_ >= displayEvery_ || mode != lastMode_)   // a newly shown view updates at once
+        if (displayAge_ >= displayEvery_)
         {
-            lastMode_ = mode;
             const double dt = (double)displayAge_ / sampleRate();
             displayAge_ = 0;
             publishDisplays(dt);
@@ -327,12 +327,8 @@ private:
         hue_.setBars(kCycleBarValues[getInt(kCycleBars)]);
     }
 
-    // The needle the user is looking at: the louder of L/R in STEREO, the sum in MONO.
-    double visibleDeflection() const
-    {
-        return getInt(kMode) == 0 ? std::fmax(engine_.deflection(kLeft), engine_.deflection(kRight))
-                                  : engine_.deflection(kMono);
-    }
+    // The louder of the two needles (drives React heat and AUTO trim).
+    double visibleDeflection() const { return std::fmax(engine_.deflection(kLeft), engine_.deflection(kRight)); }
 
     void publishMax(int index, int meter)
     {
@@ -342,7 +338,8 @@ private:
         setValue(index, param(index).toNormalised(std::round((float)vu * 10.0f) / 10.0f));
     }
 
-    void publishView() { setValue(kView, (float)(getInt(kMode) * kNumLights + getInt(kLight)) / (float)(2 * kNumLights - 1)); }
+    // View = light (the stereo half of the original Mode x Light choices).
+    void publishView() { setValue(kView, (float)getInt(kLight) / (float)(2 * kNumLights - 1)); }
 
     // Show the needle in the sector that holds `frame`, then blank the others (show-before-hide,
     // so a sector change never leaves an empty dial for a redraw).
@@ -372,21 +369,12 @@ private:
 
         const bool clipL = engine_.consumeClip(kLeft);
         const bool clipR = engine_.consumeClip(kRight);
-        if (getInt(kMode) == 0)
-        {
-            publishNeedle(kNeedleL0, kStereoSectors, kStereoPer, deflectionToFrame(engine_.deflection(kLeft), kStereoFrames));
-            publishNeedle(kNeedleR0, kStereoSectors, kStereoPer, deflectionToFrame(engine_.deflection(kRight), kStereoFrames));
-            setValue(kClipL, clipL ? 1.0f : 0.0f);
-            setValue(kClipR, clipR ? 1.0f : 0.0f);
-            publishMax(kMaxL, kLeft);
-            publishMax(kMaxR, kRight);
-        }
-        else
-        {
-            publishNeedle(kNeedleM0, kMonoSectors, kMonoPer, deflectionToFrame(engine_.deflection(kMono), kMonoFrames));
-            setValue(kClipIn, (clipL || clipR) ? 1.0f : 0.0f);
-            publishMax(kMaxM, kMono);
-        }
+        publishNeedle(kNeedleL0, kStereoSectors, kStereoPer, deflectionToFrame(engine_.deflection(kLeft), kStereoFrames));
+        publishNeedle(kNeedleR0, kStereoSectors, kStereoPer, deflectionToFrame(engine_.deflection(kRight), kStereoFrames));
+        setValue(kClipL, clipL ? 1.0f : 0.0f);
+        setValue(kClipR, clipR ? 1.0f : 0.0f);
+        publishMax(kMaxL, kLeft);
+        publishMax(kMaxR, kRight);
     }
 
     VuEngine engine_;
@@ -398,7 +386,6 @@ private:
     int64_t flashLeft_ = 0;
     int displayAge_ = 0;
     int displayEvery_ = 1470;
-    int lastMode_ = 0;
 };
 
 MPC_PLUGIN_ENTRY(SlowOpsVUMeter)

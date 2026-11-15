@@ -186,7 +186,7 @@ def make_background():
         rd.line([(x0, 421), (x1, 421)], fill=L.BRASS + (200,), width=2)
     bg.alpha_composite(rail)
 
-    for name in ('mode', 'cal', 'peak', 'light', 'output'):
+    for name in ('peak', 'output'):
         card(bg, L.card_rect(name), L.CARD_TITLES[name])
     tx, ty, tw, th = L.TRIM_CAPTION
     put_text(bg, 'TRIM', 14, (196, 170, 150, 255), (tx + tw / 2.0, ty + th / 2.0), tracking=0.08)
@@ -194,7 +194,8 @@ def make_background():
 
 
 def make_setup_background():
-    """SETUP tab: same art language, three option cards and a burned-in help panel."""
+    """SETUP tab: CALIBRATION and CLIP LEVEL cards, then one LIGHT box grouped by light type:
+    STATIC (warm/cool/off) | REACT + palette | CYCLE + rate."""
     bg = Image.new('RGBA', (L.W, L.H), L.NAVY + (255,))
     grid = Image.new('RGBA', (L.W, L.H), (0, 0, 0, 0))
     gd = ImageDraw.Draw(grid)
@@ -206,27 +207,27 @@ def make_setup_background():
     ornament(bg)
     for key, r in L.SETUP_CARDS.items():
         card(bg, r, L.SETUP_TITLES[key])
-    # help panel: walnut with brass rule, burned text
-    hx, hy, hw, hh = L.SETUP_HELP
-    bg.alpha_composite(glow_rect(bg.size, L.SETUP_HELP, 24, L.NEON, 8, 4, 120))
-    wd = ImageChops.multiply(wood(hw, hh), vgrad(hw, hh, (200, 170, 150), (110, 80, 64)))
-    paste(bg, wd, rr_mask(hw, hh, (0, 0, hw, hh), 24), (hx, hy))
-    bg.alpha_composite(glow_rect(bg.size, (hx + 8, hy + 8, hw - 16, hh - 16), 18, L.BRASS, 0.5, 1, 160))
-    lines = [
-        ('HOW TO READ IT', L.AMBER_TEXT, 24),
-        ('The VU needles show AVERAGE level with deliberately slow, IEC-style ballistics (about 300 ms).', L.CREAM, 19),
-        ('They do not show instantaneous peaks: a drum hit can clip while the needle barely moves.', L.CREAM, 19),
-        ('CLIP lamps watch sample peaks at the CLIP LEVEL above. Tap a lamp to clear it and the MAX readings.', L.CREAM, 19),
-        ('AUTO listens for 3 s and sets TRIM so the music averages 0 VU.  PHASE: +1 mono-safe, 0 wide, -1 cancels in mono.', L.CREAM, 19),
-        ('REACT colours the dials by how hot the program is.  CYCLE sweeps the hue wheel, locked to the MPC tempo.', L.CREAM, 19),
-    ]
-    y = hy + 34
-    for text, col, size in lines:
-        img = text_image(text, size, col + (255,), slant=0.08 if size < 24 else 0.16, tracking=0.01 if size < 24 else 0.06, semi=size < 24)
-        bg.alpha_composite(img, (hx + 40, y))
-        y += img.size[1] + (22 if size >= 24 else 16)
-    brand = text_image('SLOW OPS  \u00b7  VU METER', 18, L.BRASS + (255,), tracking=0.3)
-    bg.alpha_composite(brand, (hx + hw - brand.size[0] - 40, hy + hh - brand.size[1] - 28))
+    lx, ly, lw, lh = L.SETUP_CARDS['light']
+    rules = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+    rd = ImageDraw.Draw(rules)
+    keys = ['static', 'react', 'cycle']
+    for k in keys:
+        cx, cw = L.light_col(k)
+        t = text_image(L.LIGHT_COLUMN_TITLES[k], 19, L.CREAM + (230,), tracking=0.18)
+        bg.alpha_composite(t, (cx, ly + 66))
+        if k in L.LIGHT_SUBTITLES:
+            st = text_image(L.LIGHT_SUBTITLES[k], 15, (190, 170, 150, 255), tracking=0.2)
+            bg.alpha_composite(st, (cx, L.LIGHT_SUB_Y - 30))
+            # bracket tying the sub-options to their light button
+            rd.line([(cx - 10, L.LIGHT_BTN_Y + 26), (cx - 10, L.LIGHT_SUB_Y + 26)], fill=L.BRASS + (160,), width=2)
+            rd.line([(cx - 10, L.LIGHT_SUB_Y + 26), (cx - 4, L.LIGHT_SUB_Y + 26)], fill=L.BRASS + (160,), width=2)
+            rd.line([(cx - 10, L.LIGHT_BTN_Y + 26), (cx - 4, L.LIGHT_BTN_Y + 26)], fill=L.BRASS + (160,), width=2)
+        cap = text_image(L.LIGHT_CAPTIONS[k], 16, (170, 160, 190, 255), slant=0.1, semi=True)
+        bg.alpha_composite(cap, (cx, ly + lh - 44))
+    for a, b in zip(keys, keys[1:]):              # brass dividers between the columns
+        x = (L.light_col(a)[0] + L.light_col(a)[1] + L.light_col(b)[0]) // 2
+        rd.line([(x, ly + 60), (x, ly + lh - 20)], fill=L.BRASS + (110,), width=2)
+    bg.alpha_composite(rules)
     return bg
 
 
@@ -376,7 +377,7 @@ def make_face(mode, light):
         lamp_caption(img, L.STEREO_LAMPS[1], 'CLIP', 'left')
     else:
         draw_dial(img, L.mono_dial(), light)
-        lamp_caption(img, L.MONO_LAMP, 'INPUT CLIP')
+        raise ValueError('mono view was retired in v0.2')
     return img
 
 
@@ -418,7 +419,7 @@ def make_glow():
     n = L.GLOW_FRAMES
     gs, hs = L.REACT_GLOW_SCALE, L.REACT_HALO_SCALE
     cw, ch = L.CABINET_INNER[2], L.CABINET_INNER[3]
-    for mode in L.MODE_ORDER:
+    for mode in ['stereo']:
         fw, fh = cw // gs, ch // gs
         strip = Image.new('RGBA', (fw, fh * n), (0, 0, 0, 0))
         for f in range(n):
@@ -535,20 +536,18 @@ def make_controls():
         _, _, w, h = rect
         save(button(w, h, label, style, True, size), name + '_on.png')
         save(button(w, h, label, style, False, size), name + '_off.png')
-    for i, lab in enumerate(('STEREO', 'MONO')):
-        pair('mode_%d' % i, L.MODE_BUTTONS[i], lab, size=18)
     for i, lab in enumerate(L.REF_LABELS):
-        pair('cal_%d' % i, L.CAL_BUTTONS[i], lab + ' dBFS', size=16)
+        pair('cal_%d' % i, L.CAL_BUTTONS[i], lab + ' dBFS', size=20)
     _, _, w, h = L.PEAK_BUTTON
-    save(button(w, h, 'ON', 'seg', True), 'peak_on.png')
-    save(button(w, h, 'OFF', 'seg', False), 'peak_off.png')
+    save(button(w, h, 'ON', 'seg', True, 24), 'peak_on.png')
+    save(button(w, h, 'OFF', 'seg', False, 24), 'peak_off.png')
     for i, lab in enumerate(('WARM', 'COOL', 'OFF', 'REACT', 'CYCLE')):
         style = {'REACT': 'react', 'CYCLE': 'cycle'}.get(lab, 'seg')
-        pair('light_%d' % i, L.LIGHT_BUTTONS[i], lab, style, size=17)
-    pair('bypass', L.BYPASS_BUTTON, 'BYPASS', 'bypass', size=27)
-    pair('auto', L.AUTO_BUTTON, 'AUTO', size=16)
+        pair('light_%d' % i, L.LIGHT_BUTTONS[i], lab, style, size=24 if style != 'seg' else 19)
+    pair('bypass', L.BYPASS_BUTTON, 'BYPASS', 'bypass', size=40)
+    pair('auto', L.AUTO_BUTTON, 'AUTO', size=22)
     for i, lab in enumerate(L.CLIP_LABELS):
-        pair('clip_%d' % i, L.CLIP_BUTTONS[i], lab, size=19)
+        pair('clip_%d' % i, L.CLIP_BUTTONS[i], lab, size=18)
     for i, lab in enumerate(L.RATE_LABELS):
         pair('rate_%d' % i, L.RATE_BUTTONS[i], lab, size=19)
     for i, (lab, name) in enumerate(zip(L.PALETTE_LABELS, L.PALETTE_ORDER)):
@@ -715,19 +714,13 @@ def compose(bg, faces, mode, light_i, vus, cal=1, heat=0.0, clip=True, hue=0.0, 
         img = Image.open(os.path.join(OUT, name + ('_on.png' if on else '_off.png')))
         x, y, w, h = rect
         page.alpha_composite(img, (x + (w - img.size[0]) // 2, y + (h - img.size[1]) // 2))
-    for i in range(2):
-        btn('mode_%d' % i, L.MODE_BUTTONS[i], (mode == 'mono') == (i == 1))
-    for i in range(3):
-        btn('cal_%d' % i, L.CAL_BUTTONS[i], i == cal)
     btn('peak', L.PEAK_BUTTON, True)
-    for i in range(len(L.LIGHT_BUTTONS)):
-        btn('light_%d' % i, L.LIGHT_BUTTONS[i], i == light_i)
     btn('bypass', L.BYPASS_BUTTON, False)
     btn('auto', L.AUTO_BUTTON, False)
     knob = Image.open(os.path.join(OUT, 'knob_trim.png'))
     page.alpha_composite(knob.crop((0, 63 * L.KNOB_SIZE, L.KNOB_SIZE, 64 * L.KNOB_SIZE)), L.KNOB[:2])
     tx, ty, tw, th = L.TRIM_VALUE
-    put_text(page, '0.0 dB', 22, L.CREAM + (255,), (tx + tw / 2.0, ty + th / 2.0), slant=0.0, semi=True)
+    put_text(page, '0.0 dB', 30, L.CREAM + (255,), (tx + tw / 2.0, ty + th / 2.0), slant=0.0, semi=True)
     screen = Image.new('RGBA', (L.W, 800), (34, 35, 44, 255))
     hdr = ImageDraw.Draw(screen)
     hdr.text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))
@@ -740,11 +733,15 @@ def preview(bg, faces, mode, light_i, vus, cal=1, out=None, heat=0.0, hue=0.0, *
     compose(bg, faces, mode, light_i, vus, cal, heat, hue=hue, **kw).convert('RGB').save(os.path.join(L.PREVIEW_DIR, out))
 
 
-def setup_preview(sbg, clip=0, rate=1, pal=0):
+def setup_preview(sbg, clip=0, rate=1, pal=0, cal=1, light=3):
     page = sbg.copy()
     def btn(name, rect, on):
         img = Image.open(os.path.join(OUT, name + ('_on.png' if on else '_off.png')))
         page.alpha_composite(img, rect[:2])
+    for i, r in enumerate(L.CAL_BUTTONS):
+        btn('cal_%d' % i, r, i == cal)
+    for i, r in enumerate(L.LIGHT_BUTTONS):
+        btn('light_%d' % i, r, i == light)
     for i, r in enumerate(L.CLIP_BUTTONS):
         btn('clip_%d' % i, r, i == clip)
     for i, r in enumerate(L.RATE_BUTTONS):
@@ -802,23 +799,22 @@ def main():
     print('background'); bg = make_background(); save(bg, 'bg.png')
     sbg = make_setup_background(); save(sbg, 'bg_setup.png')
     faces = {}
-    for mode in L.MODE_ORDER:
+    for mode in ['stereo']:
         for light in L.STATIC_LIGHTS + ['glow']:     # 'glow' = window overlay above the React/Cycle glow strip
             print('face', mode, light)
             faces[(mode, light)] = make_face(mode, light)
             save(faces[(mode, light)], 'face_%s_%s.png' % (mode, light))
-    print('needles'); make_needles('s', L.stereo_dial(0)); make_needles('m', L.mono_dial())
+    print('needles'); make_needles('s', L.stereo_dial(0))
     print('controls'); make_controls()
     print('glow strips'); make_glow()
     preview(bg, faces, 'stereo', 0, (0.0, -3.0), out='preview-stereo.png')
-    preview(bg, faces, 'mono', 0, (-1.0,), out='preview-mono.png')
     preview(bg, faces, 'stereo', 1, (-7.0, 1.0), cal=0, out='preview-stereo-cool.png')
-    preview(bg, faces, 'mono', 2, (-20.0,), cal=2, out='preview-mono-off.png')
+    preview(bg, faces, 'stereo', 2, (-20.0, -15.0), cal=2, out='preview-stereo-off.png')
     for name, heat, vus, mode in (('cold', 0.05, (-16.0, -18.0), 'stereo'), ('warm', 0.66, (0.0, -1.0), 'stereo'),
-                                  ('hot', 1.0, (3.0, 2.6), 'stereo'), ('mono', 0.42, (-5.0,), 'mono')):
+                                  ('hot', 1.0, (3.0, 2.6), 'stereo')):
         preview(bg, faces, mode, 3, vus, out='preview-react-%s.png' % name, heat=heat)
-    for name, hue, mode in (('red', 0.0, 'stereo'), ('green', 1 / 3.0, 'stereo'), ('blue', 2 / 3.0, 'mono')):
-        preview(bg, faces, mode, 4, (-4.0, -6.0) if mode == 'stereo' else (-3.0,), out='preview-cycle-%s.png' % name, hue=hue)
+    for name, hue in (('red', 0.0), ('green', 1 / 3.0), ('blue', 2 / 3.0)):
+        preview(bg, faces, 'stereo', 4, (-4.0, -6.0), out='preview-cycle-%s.png' % name, hue=hue)
     preview(bg, faces, 'stereo', 3, (2.0, 1.0), out='preview-react-neon.png', heat=0.8, palette=1, corr=0.2)
     preview(bg, faces, 'stereo', 3, (-2.0, -3.0), out='preview-react-amber.png', heat=0.55, palette=2, corr=0.7)
     preview(bg, faces, 'stereo', 4, (3.0, 2.0), out='preview-flash.png', flash=True, corr=-0.6)

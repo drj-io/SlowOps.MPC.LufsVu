@@ -140,17 +140,13 @@ ORNAMENT = (0, 0, W, 56)
 CABINET = (16, 58, 1248, 394)                  # walnut cabinet with neon edge
 CABINET_INNER = (30, 70, 1220, 368)            # region covered by the per-view face images (height divisible by 4)
 
-STRIP_Y, STRIP_H = 466, 150                    # control strip cards
+STRIP_Y, STRIP_H = 466, 150                    # METER control strip: PEAK | BYPASS | OUTPUT
 CARDS = {                                      # x, width (12 px gaps, 16 px page margins)
-    'mode':  (16, 188),
-    'cal':   (216, 276),
-    'peak':  (504, 84),
-    'light': (600, 370),
-    'bypass': (982, 108),
-    'output': (1102, 162),
+    'peak':   (16, 300),
+    'bypass': (328, 420),
+    'output': (760, 504),
 }
-CARD_TITLES = {'mode': 'MODE', 'cal': 'CALIBRATION', 'peak': 'PEAK', 'light': 'LIGHT', 'output': 'OUTPUT'}
-BUTTON_Y, BUTTON_H = 530, 48
+CARD_TITLES = {'peak': 'PEAK', 'output': 'OUTPUT'}
 
 
 def card_rect(name):
@@ -158,24 +154,14 @@ def card_rect(name):
     return (x, STRIP_Y, w, STRIP_H)
 
 
-def segment_buttons(card, n, pad=14, gap=8):
-    """Rects of n equal buttons across a card."""
-    x, w = CARDS[card]
-    bw = (w - 2 * pad - (n - 1) * gap) // n
-    return [(x + pad + i * (bw + gap), BUTTON_Y, bw, BUTTON_H) for i in range(n)]
-
-
-MODE_BUTTONS = segment_buttons('mode', 2)
-CAL_BUTTONS = segment_buttons('cal', 3)
-PEAK_BUTTON = segment_buttons('peak', 1)[0]
-LIGHT_BUTTONS = segment_buttons('light', 5)
+PEAK_BUTTON = (CARDS['peak'][0] + (CARDS['peak'][1] - 150) // 2, STRIP_Y + 64, 150, 56)
 BYPASS_BUTTON = (CARDS['bypass'][0], STRIP_Y, CARDS['bypass'][1], STRIP_H)
 KNOB_SIZE = 76
-KNOB = (CARDS['output'][0] + CARDS['output'][1] - KNOB_SIZE - 12, STRIP_Y + 46, KNOB_SIZE, KNOB_SIZE)
-TRIM_CAPTION = (KNOB[0], KNOB[1] + KNOB_SIZE + 2, KNOB_SIZE, 20)       # burned "TRIM" under the knob
-AUTO_BUTTON = (CARDS['output'][0] + 12, STRIP_Y + 54, 62, 28)         # AUTO trim trigger
-AUTO_GLOW_PAD = 7                                                      # listening halo around it
-TRIM_VALUE = (CARDS['output'][0] + 2, STRIP_Y + 92, 82, 30)            # live Label
+KNOB = (CARDS['output'][0] + CARDS['output'][1] - KNOB_SIZE - 40, STRIP_Y + 40, KNOB_SIZE, KNOB_SIZE)
+TRIM_CAPTION = (KNOB[0], KNOB[1] + KNOB_SIZE + 4, KNOB_SIZE, 20)       # burned "TRIM" under the knob
+AUTO_BUTTON = (CARDS['output'][0] + 28, STRIP_Y + 66, 110, 44)         # AUTO trim trigger
+AUTO_GLOW_PAD = 8                                                      # listening halo around it
+TRIM_VALUE = (CARDS['output'][0] + 170, STRIP_Y + 64, 180, 48)          # live Label
 CORR = (800, 401, 190, 38)                                             # phase correlation strip (bottom rail)
 CORR_STEPS = 21                                                        # must match the plugin (0 = no signal)
 MAX_LABEL_W, MAX_LABEL_H = 150, 24                                     # MAX VU readouts (lower-right of each dial)
@@ -187,25 +173,51 @@ def max_label_rect(window):
 
 
 # ---------------------------------------------------------------------------- SETUP tab
+# Row 1: CALIBRATION | CLIP LEVEL.  Row 2: one LIGHT box with three grouped columns:
+#   STATIC (warm / cool / off) | REACT + its palette | CYCLE + its rate
 SETUP_CARDS = {                                  # x, y, w, h
-    'clip':    (16, 70, 400, 150),
-    'rate':    (440, 70, 400, 150),
-    'palette': (864, 70, 400, 150),
+    'cal':   (16, 70, 612, 150),
+    'clip':  (652, 70, 612, 150),
+    'light': (16, 240, 1248, 372),
 }
-SETUP_TITLES = {'clip': 'CLIP LEVEL', 'rate': 'CYCLE RATE', 'palette': 'REACT PALETTE'}
-SETUP_HELP = (16, 244, 1248, 368)
+SETUP_TITLES = {'cal': 'CALIBRATION', 'clip': 'CLIP LEVEL', 'light': 'LIGHT'}
+LIGHT_COLUMNS = {                                # x, width inside the LIGHT box
+    'static': (40, 340),
+    'react':  (412, 400),
+    'cycle':  (844, 396),
+}
+LIGHT_COLUMN_TITLES = {'static': 'STATIC', 'react': 'REACT', 'cycle': 'CYCLE'}
+LIGHT_SUBTITLES = {'react': 'PALETTE', 'cycle': 'RATE'}
+LIGHT_CAPTIONS = {'static': 'A fixed backlight', 'react': 'Colour follows the level',
+                  'cycle': 'Locked to the MPC tempo'}
+LIGHT_BTN_Y = SETUP_CARDS['light'][1] + 104      # main light buttons
+LIGHT_SUB_Y = SETUP_CARDS['light'][1] + 230      # palette / rate buttons
 
 
-def setup_buttons(card, n, pad=18, gap=10):
+def row_buttons(x, w, y, n, h=52, gap=10):
+    bw = (w - (n - 1) * gap) // n
+    return [(x + i * (bw + gap), y, bw, h) for i in range(n)]
+
+
+def setup_buttons(card, n, pad=24, gap=12):
     x, y, w, h = SETUP_CARDS[card]
-    bw = (w - 2 * pad - (n - 1) * gap) // n
-    return [(x + pad + i * (bw + gap), y + 72, bw, 52) for i in range(n)]
+    return row_buttons(x + pad, w - 2 * pad, y + 72, n, 52, gap)
 
 
+def light_col(key):
+    x, w = LIGHT_COLUMNS[key]
+    return SETUP_CARDS['light'][0] + x, w
+
+
+CAL_BUTTONS = setup_buttons('cal', 3)
 CLIP_BUTTONS = setup_buttons('clip', 4)
-RATE_BUTTONS = setup_buttons('rate', 4)
-PALETTE_BUTTONS = setup_buttons('palette', 3)
-CLIP_LABELS = ['0 dBFS', '\u22120.3', '\u22121', '\u22123']
+# Light buttons in Light-choice order: Warm, Cool, Off (STATIC column), React, Cycle.
+LIGHT_BUTTONS = row_buttons(*light_col('static'), LIGHT_BTN_Y, 3) + \
+    [(light_col('react')[0], LIGHT_BTN_Y, light_col('react')[1], 52),
+     (light_col('cycle')[0], LIGHT_BTN_Y, light_col('cycle')[1], 52)]
+PALETTE_BUTTONS = row_buttons(*light_col('react'), LIGHT_SUB_Y, 3)
+RATE_BUTTONS = row_buttons(*light_col('cycle'), LIGHT_SUB_Y, 4)
+CLIP_LABELS = ['0 dBFS', '\u22120.3 dBFS', '\u22121 dBFS', '\u22123 dBFS']
 RATE_LABELS = ['1 BAR', '2 BARS', '4 BARS', '8 BARS']
 PALETTE_LABELS = ['THERMAL', 'NEON', 'AMBER']
 HALO = (0, 40, 1280, 432)                      # React cabinet halo region (1/4-res strip)
@@ -367,7 +379,7 @@ def needle_file(kind, k):
 def decoded_needle_bytes():
     """Decoded RGBA bytes of all needle strips (stereo strips are shared by L and R)."""
     total = 0
-    for dial in (stereo_dial(0), mono_dial()):
+    for dial in (stereo_dial(0),):
         per = dial.frames // dial.sectors
         for k in range(dial.sectors):
             _, _, w, h = sector_box(dial, k)

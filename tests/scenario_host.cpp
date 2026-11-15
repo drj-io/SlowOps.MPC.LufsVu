@@ -174,15 +174,15 @@ static void transparency()
 {
     std::printf("Audio transparency (trim 0.0 dB)\n");
     for (int inPlace = 1; inPlace >= 0; --inPlace)
-        for (int mode = 0; mode < 2; ++mode)
+        for (int light = 0; light < 5; ++light)
         {
-            Plug p; p.inPlace = inPlace; p.set(kMode, (float)mode); p.input = program(p.sr);
+            Plug p; p.inPlace = inPlace; p.set(kLight, (float)light / 4.0f); p.input = program(p.sr);
             p.runFor(1.0, { 512, 37, 128, 1, 300 });
-            CHECK(p.bitExact, "%s, %s view: output bit-identical to input", inPlace ? "in place" : "separate buffers", mode ? "MONO" : "STEREO");
+            CHECK(p.bitExact, "%s, light %d: output bit-identical to input", inPlace ? "in place" : "separate buffers", light);
         }
     Plug p; p.input = program(p.sr);
     p.runFor(0.3); p.set(kMode, 1.0f); p.runFor(0.3); p.set(kMode, 0.0f); p.runFor(0.3);
-    CHECK(p.bitExact, "Stereo -> Mono -> Stereo while playing: output unchanged");
+    CHECK(p.bitExact, "toggling the retired Mode slot while playing: output unchanged");
     CHECK(p.text(kTrim) == "0.0 dB", "default trim text is \"%s\"", p.text(kTrim).c_str());
 }
 
@@ -223,20 +223,22 @@ static void meters()
         Plug p; p.input = sine(p.sr, -18.0, -1.0);      // anti-phase
         p.runFor(1.5);
         CHECK(std::abs(p.frame(kNeedleL) - vuFrame(0.0)) <= 1, "anti-phase, STEREO: L at 0 VU");
-        p.set(kMode, 1.0f); p.block(64);
-        CHECK(p.frame(kNeedleM) == 0, "anti-phase, MONO: needle published at rest immediately after switching");
-        p.input = sine(p.sr, -18.0, 0.0);              // R silent
-        p.runFor(2.0);
-        CHECK(std::abs(p.frame(kNeedleM) - vuFrame(-6.02, 256)) <= 1, "L only, MONO: -6 VU (frame %d, expect %d)", p.frame(kNeedleM), vuFrame(-6.02, 256));
+        p.set(kMode, 1.0f); p.runFor(1.0);             // retired Mono slot: still stereo
+        CHECK(std::abs(p.frame(kNeedleL) - vuFrame(0.0)) <= 1 && std::abs(p.frame(kNeedleR) - vuFrame(0.0)) <= 1,
+              "retired Mode = Mono is ignored: L/R needles keep metering");
+        int monoWrites = 0;
+        for (int i = kNeedleM0; i < kNeedleM0 + 8; ++i) monoWrites += p.automate().count[i];
+        CHECK(monoWrites == 0 && p.automate().count[kClipIn] == 0 && p.automate().count[kMaxM] == 0,
+              "retired mono displays are never published");
     }
 }
 
 static void displayBudget()
 {
     std::printf("Display update budget\n");
-    for (int mode = 0; mode < 2; ++mode)
+    for (int mode = 0; mode < 1; ++mode)       // stereo only (Mode is retired)
     {
-        Plug p; p.set(kMode, (float)mode);
+        Plug p;
         Source prog = program(p.sr);
         p.input = [prog, sr = p.sr](int64_t t, float& l, float& r) {   // level swings at 1 Hz: needles keep moving
             prog(t, l, r);
@@ -282,28 +284,28 @@ static void clips()
     p.set(kResetClip, 1.0f); p.runFor(0.1);
     CHECK(p.get(kClipL) < 0.5f && p.get(kResetClip) < 0.5f, "RESET CLIP clears it and the trigger returns to Off");
 
-    Plug m; m.set(kMode, 1.0f);
+    Plug m;
     m.input = [](int64_t t, float& l, float& r) { l = (t % 500 == 0) ? 1.0f : 0.0f; r = -l; };
     m.runFor(0.5);
-    CHECK(m.frame(kNeedleM) == 0 && m.get(kClipIn) >= 0.5f, "MONO: L=+1/R=-1 cancels the needle but INPUT CLIP lights");
+    CHECK(m.get(kClipL) >= 0.5f && m.get(kClipR) >= 0.5f, "L=+1/R=-1 impulses light both CLIP lamps");
 }
 
 static void state()
 {
     std::printf("Save / reload\n");
     Plug a; a.input = sine(a.sr, -6.0);
-    a.set(kMode, 1.0f); a.set(kRef, 1.0f); a.set(kPeak, 0.0f); a.set(kLight, light(1)); a.set(kTrim, 0.75f);
+    a.set(kRef, 1.0f); a.set(kPeak, 0.0f); a.set(kLight, light(1)); a.set(kTrim, 0.75f);
     a.runFor(1.0);
     a.set(kResetClip, 1.0f);                       // saved in the "on" position: must not fire on load
     auto chunk = a.save();
     Plug b; b.load(chunk);
     b.input = [](int64_t, float& l, float& r) { l = r = 0.0f; };
     b.runFor(0.1);
-    CHECK(b.get(kMode) == 1.0f && b.get(kRef) == 1.0f && b.get(kPeak) == 0.0f && std::lround(b.get(kLight) * 4) == 1 &&
-          b.text(kTrim) == "+6.0 dB", "mode/ref/peak/light/trim restored (trim \"%s\")", b.text(kTrim).c_str());
-    CHECK(viewOf(b.get(kView)) == 6, "view = Mono/Cool (%ld)", viewOf(b.get(kView)));
+    CHECK(b.get(kRef) == 1.0f && b.get(kPeak) == 0.0f && std::lround(b.get(kLight) * 4) == 1 &&
+          b.text(kTrim) == "+6.0 dB", "ref/peak/light/trim restored (trim \"%s\")", b.text(kTrim).c_str());
+    CHECK(viewOf(b.get(kView)) == 1, "view = Cool (%ld)", viewOf(b.get(kView)));
     CHECK(b.get(kResetClip) < 0.5f, "a saved reset trigger is cleared, not fired as a setting");
-    CHECK(b.frame(kNeedleM) == 0, "needle shows the live (silent) reading, not the saved one");
+    CHECK(b.frame(kNeedleL) == 0, "needle shows the live (silent) reading, not the saved one");
 }
 
 static void react()
@@ -326,9 +328,8 @@ static void react()
     CHECK(warmish > 6, "cools slowly: still step %d 0.2 s after the music stops", warmish);
     p.runFor(4.0);
     CHECK(heatStep(p) == 0, "back to blue after the glow decays");
-    p.input = sine(p.sr, -18.0, -1.0);   // anti-phase
-    p.set(kMode, 1.0f); p.runFor(3.0);
-    CHECK(heatStep(p) == 0 && viewOf(p.get(kView)) == 8, "MONO React: anti-phase sum stays cold (step %d)", heatStep(p));
+    p.set(kMode, 1.0f); p.runFor(0.2);
+    CHECK(viewOf(p.get(kView)) == 3, "retired Mode slot does not change the view");
     p.bitExact = true; p.input = program(p.sr); p.runFor(0.5);
     CHECK(p.bitExact, "React lighting never touches the audio");
 
@@ -425,8 +426,6 @@ static void v02()
         CHECK(corr(p) == 21 && p.text(kCorr) == "+1.0", "mono material: +1 (%s)", p.text(kCorr).c_str());
         p.input = sine(p.sr, -18.0, -1.0); p.runFor(2.0);
         CHECK(corr(p) == 1 && p.text(kCorr) == "-1.0", "phase-flipped: -1 (%s)", p.text(kCorr).c_str());
-        p.set(kMode, 1.0f); p.runFor(0.2);
-        CHECK(corr(p) == 1, "shown in MONO too");
     }
 
     std::printf("Max VU readouts\n");
@@ -434,11 +433,8 @@ static void v02()
         Plug p; p.input = sine(p.sr, -15.0); p.runFor(1.5);   // +3 VU
         p.input = sine(p.sr, -24.0); p.runFor(1.5);            // -6 VU
         CHECK(p.text(kMaxL) == "MAX +3.1 VU" && p.text(kMaxR) == "MAX +3.1 VU", "STEREO: L/R hold %s (incl. needle overshoot)", p.text(kMaxL).c_str());
-        CHECK(p.text(kMaxM) == "MAX --", "MONO readout not published while hidden");
         p.set(kResetClip, 1.0f); p.runFor(0.5);
         CHECK(p.text(kMaxL) == "MAX -6.0 VU", "lamp tap clears it (now %s)", p.text(kMaxL).c_str());
-        p.set(kMode, 1.0f); p.runFor(0.2);
-        CHECK(p.text(kMaxM) == "MAX -6.0 VU", "MONO shows the sum's max (%s)", p.text(kMaxM).c_str());
     }
 
     std::printf("CLIP threshold\n");
@@ -492,12 +488,12 @@ static void instances()
 {
     std::printf("Multiple instances\n");
     Plug a, b;
-    a.set(kMode, 1.0f); b.set(kRef, 2.0f);
+    a.set(kLight, light(3)); b.set(kRef, 2.0f);
     a.input = sine(a.sr, -18.0); b.input = sine(b.sr, -18.0, 1.0, 440.0);
     for (int i = 0; i < 60; ++i) { a.block(512); b.block(512); }
-    CHECK(a.get(kMode) == 1.0f && b.get(kMode) == 0.0f, "modes independent");
+    CHECK(viewOf(a.get(kView)) == 3 && viewOf(b.get(kView)) == 0, "lights independent");
     CHECK(std::abs(b.frame(kNeedleL) - vuFrame(-4.0)) <= 1, "B at ref -14 reads -4 VU (frame %d)", b.frame(kNeedleL));
-    CHECK(std::abs(a.frame(kNeedleM) - vuFrame(0.0, 256)) <= 1, "A in MONO reads 0 VU (frame %d)", a.frame(kNeedleM));
+    CHECK(std::abs(a.frame(kNeedleL) - vuFrame(0.0)) <= 1, "A at ref -18 reads 0 VU (frame %d)", a.frame(kNeedleL));
 }
 
 int main(int argc, char** argv)

@@ -4,12 +4,15 @@ Run after a native build (which writes plugin/build/params.json):
     python3 scripts/gen_skins.py
 Standard library only. Geometry comes from skin_layout.py; artwork from make_skin_art.py.
 
-One METER tab:
+METER tab:
   * tab background: ornament, walnut cabinet, control-strip cards (bg.png)
-  * six face images (Mode x Light), shown by the plugin-computed View parameter
-  * needle sector filmstrips (4 per stereo needle, 8 for mono), shown by Mode
-  * clip lamps + transparent RESET CLIP tap areas, reference plates
-  * control strip: MODE, CALIBRATION, PEAK, LIGHT, BYPASS, OUTPUT TRIM
+  * face images per Light (Warm/Cool/Off) plus a glow strip + overlay for React/Cycle,
+    chosen by the plugin-computed View parameter
+  * needle sector filmstrips (4 per needle), clip lamps + RESET CLIP tap areas, plate,
+    PHASE meter, MAX readouts
+  * control strip: PEAK | BYPASS | OUTPUT (AUTO, trim value, trim knob)
+SETUP tab: CALIBRATION | CLIP LEVEL, then LIGHT (STATIC | REACT + palette | CYCLE + rate).
+The plugin is stereo only; the retired mono parameters have no widgets.
 """
 import json
 import os
@@ -92,56 +95,46 @@ def main():
     comps.append(filmstrip('glow halo', 'glow_halo.png', L.GLOW_FRAMES, P('Glow'), L.HALO,
                            only='RangedEnabling/%d/%d/%d/%s' % (g0, g1, nl, P('Light'))))
 
-    # dial faces, one per View (Mode x Light); React and Cycle share a 1/2-res glow strip
-    # under a transparent window overlay.
-    for m, mode in enumerate(L.MODE_ORDER):
-        for li, light in enumerate(L.STATIC_LIGHTS):
-            comps.append(image('face %s %s' % (mode, light), 'face_%s_%s.png' % (mode, light), L.CABINET_INNER,
-                               only=when('View', m * nl + li, L.NUM_VIEWS)))
-        cond = 'RangedEnabling/%d/%d/%d/%s' % (m * nl + g0, m * nl + g1, L.NUM_VIEWS, P('View'))
-        comps.append(filmstrip('glow %s' % mode, 'glow_%s.png' % mode, L.GLOW_FRAMES, P('Glow'), L.CABINET_INNER, only=cond))
-        comps.append(image('face %s glow' % mode, 'face_%s_glow.png' % mode, L.CABINET_INNER, only=cond))
+    # dial faces, one per View (= Light; the plugin is stereo only). React and Cycle share a
+    # 1/4-res glow strip under a transparent window overlay.
+    for li, light in enumerate(L.STATIC_LIGHTS):
+        comps.append(image('face %s' % light, 'face_stereo_%s.png' % light, L.CABINET_INNER,
+                           only=when('View', li, L.NUM_VIEWS)))
+    cond = 'RangedEnabling/%d/%d/%d/%s' % (g0, g1, L.NUM_VIEWS, P('View'))
+    comps.append(filmstrip('glow', 'glow_stereo.png', L.GLOW_FRAMES, P('Glow'), L.CABINET_INNER, only=cond))
+    comps.append(image('face glow', 'face_stereo_glow.png', L.CABINET_INNER, only=cond))
 
     # needles: sector filmstrips over each dial window
-    def needles(key, kind, dial, mode_choice):
+    def needles(key, kind, dial):
         first, sectors, per = spec[key]
         wx, wy = dial.window[0], dial.window[1]
         for k in range(sectors):
             x, y, w, h = L.sector_box(dial, k)
             comps.append(filmstrip('%s needle %d' % (key, k + 1), L.needle_file(kind, k), per + 1,
-                                   'Parameter %d' % (first + k), (wx + x, wy + y, w, h), only=when('Mode', mode_choice, 2)))
-    needles('L', 's', L.stereo_dial(0), 0)
-    needles('R', 's', L.stereo_dial(1), 0)
-    needles('M', 'm', L.mono_dial(), 1)
+                                   'Parameter %d' % (first + k), (wx + x, wy + y, w, h)))
+    needles('L', 's', L.stereo_dial(0))
+    needles('R', 's', L.stereo_dial(1))
 
     # clip lamps and their RESET CLIP tap areas
-    lamps = [('L Clip', L.STEREO_LAMPS[0], L.LAMP_CAPTION_SIDE[0], 0),
-             ('R Clip', L.STEREO_LAMPS[1], L.LAMP_CAPTION_SIDE[1], 0),
-             ('Input Clip', L.MONO_LAMP, 'right', 1)]
-    for name, (x, y), side, mode_choice in lamps:
-        comps.append(filmstrip(name.lower(), 'lamp.png', 2, P(name), (x, y, L.LAMP, L.LAMP), only=when('Mode', mode_choice, 2)))
-        comps.append(button(name.lower() + ' reset', 'hit', 1, 1, P('Reset Clip'), L.lamp_hit_rect((x, y), side),
-                            only=when('Mode', mode_choice, 2)))
+    lamps = [('L Clip', L.STEREO_LAMPS[0], L.LAMP_CAPTION_SIDE[0]),
+             ('R Clip', L.STEREO_LAMPS[1], L.LAMP_CAPTION_SIDE[1])]
+    for name, (x, y), side in lamps:
+        comps.append(filmstrip(name.lower(), 'lamp.png', 2, P(name), (x, y, L.LAMP, L.LAMP)))
+        comps.append(button(name.lower() + ' reset', 'hit', 1, 1, P('Reset Clip'), L.lamp_hit_rect((x, y), side)))
 
     # reference plate
     for i in range(3):
         comps.append(image('plate %d' % i, 'plate_%d.png' % i, L.PLATE, only=when('0 VU', i, 3)))
 
-    # control strip
-    for i, r in enumerate(L.MODE_BUTTONS):
-        comps.append(button('mode %d' % i, 'mode_%d' % i, i, 2, P('Mode'), r))
-    for i, r in enumerate(L.CAL_BUTTONS):
-        comps.append(button('cal %d' % i, 'cal_%d' % i, i, 3, P('0 VU'), r))
+    # control strip: PEAK | BYPASS | OUTPUT
     comps.append(button('peak', 'peak', 1, 1, P('Peak Hold'), L.PEAK_BUTTON))
-    for i, r in enumerate(L.LIGHT_BUTTONS):
-        comps.append(button('light %d' % i, 'light_%d' % i, i, len(L.LIGHT_BUTTONS), P('Light'), r))
     comps.append(button('bypass', 'bypass', 1, 1, P('Bypass'), L.BYPASS_BUTTON))
     comps.append(entry('trim knob', 'Knob', {'version': 3, 'knobType': 'FilmStrip', 'filmStrip': 'knob_trim.png',
                                              'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
                                              'handleName': P('Trim')}, L.KNOB, show='Hide', focus='Yes'))
     comps.append(entry('trim value', 'Label', {
         'version': 1,
-        'textStyle': {'version': 1, 'font': {'version': 1, 'name': 'Titillium Web', 'style': 'SemiBold', 'height': 22.0},
+        'textStyle': {'version': 1, 'font': {'version': 1, 'name': 'Titillium Web', 'style': 'SemiBold', 'height': 30.0},
                       'colour': L.argb(L.CREAM), 'justification': 'horizontallyCentred verticallyCentred', 'case': 'Original'},
         'type': 'Value', 'handleName': P('Trim')}, L.TRIM_VALUE, show='Hide'))
 
@@ -151,19 +144,18 @@ def main():
     comps.append(filmstrip('auto busy', 'auto_busy.png', 2, P('Auto Busy'), (ax - pad, ay - pad, aw + 2 * pad, ah + 2 * pad)))
     comps.append(button('auto', 'auto', 1, 1, P('Auto Trim'), L.AUTO_BUTTON))
 
-    # phase correlation (both views)
+    # phase correlation
     comps.append(filmstrip('phase', 'corr.png', L.CORR_STEPS + 1, P('Correlation'), L.CORR))
 
     # MAX VU readouts in each dial's lower-right corner
-    def max_label(name, param, window, mode_choice):
+    def max_label(name, param, window):
         comps.append(entry(name, 'Label', {
             'version': 1,
             'textStyle': {'version': 1, 'font': {'version': 1, 'name': 'Titillium Web', 'style': 'SemiBold', 'height': 17.0},
                           'colour': L.argb(L.INK), 'justification': 'right verticallyCentred', 'case': 'Original'},
-            'type': 'Value', 'handleName': P(param)}, L.max_label_rect(window), show='Hide', only=when('Mode', mode_choice, 2)))
-    max_label('max L', 'L Max', L.STEREO_WINDOWS[0], 0)
-    max_label('max R', 'R Max', L.STEREO_WINDOWS[1], 0)
-    max_label('max M', 'M Max', L.MONO_WINDOW, 1)
+            'type': 'Value', 'handleName': P(param)}, L.max_label_rect(window), show='Hide'))
+    max_label('max L', 'L Max', L.STEREO_WINDOWS[0])
+    max_label('max R', 'R Max', L.STEREO_WINDOWS[1])
 
     def make_tab(name, key, bgimg, children):
         bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': bgimg}
@@ -174,8 +166,12 @@ def main():
                                         'componentsData': children},
                 'qlinkBoundsData': []}
 
-    # SETUP tab
+    # SETUP tab: CALIBRATION | CLIP LEVEL, then the LIGHT box (STATIC | REACT + palette | CYCLE + rate)
     setup = []
+    for i, r in enumerate(L.CAL_BUTTONS):
+        setup.append(button('cal %d' % i, 'cal_%d' % i, i, len(L.CAL_BUTTONS), P('0 VU'), r))
+    for i, r in enumerate(L.LIGHT_BUTTONS):
+        setup.append(button('light %d' % i, 'light_%d' % i, i, len(L.LIGHT_BUTTONS), P('Light'), r))
     for i, r in enumerate(L.CLIP_BUTTONS):
         setup.append(button('clip level %d' % i, 'clip_%d' % i, i, len(L.CLIP_BUTTONS), P('Clip Level'), r))
     for i, r in enumerate(L.RATE_BUTTONS):
@@ -187,7 +183,7 @@ def main():
 
     # Discrete steps for every choice/bool parameter a widget or IndexedEnabling depends on.
     reps = []
-    for name in ('Mode', '0 VU', 'Peak Hold', 'Light', 'Bypass', 'Reset Clip', 'View', 'L Clip', 'R Clip', 'Input Clip',
+    for name in ('0 VU', 'Peak Hold', 'Light', 'Bypass', 'Reset Clip', 'View', 'L Clip', 'R Clip',
                  'Auto Trim', 'Auto Busy', 'Clip Level', 'Cycle Rate', 'Palette'):
         p = BY_INDEX[IDX[name]]
         reps.append({'key': P(name), 'value': p['choices']})
@@ -200,13 +196,13 @@ def main():
 
     # Q-Links: top row follows the strip left to right; read-only displays and the trigger stay unassigned.
     q = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for ql, name in ((13, 'Mode'), (14, '0 VU'), (15, 'Peak Hold'), (16, 'Light'), (9, 'Bypass'), (10, 'Trim')):
+    for ql, name in ((13, 'Peak Hold'), (14, 'Bypass'), (15, 'Trim')):
         q['Q-Link %d' % ql] = IDX[name]
     q2 = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for ql, name in ((13, 'Clip Level'), (14, 'Cycle Rate'), (15, 'Palette')):
+    for ql, name in ((13, '0 VU'), (14, 'Clip Level'), (15, 'Light'), (16, 'Palette'), (9, 'Cycle Rate')):
         q2['Q-Link %d' % ql] = IDX[name]
     prog = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for i, name in enumerate(('Mode', '0 VU', 'Peak Hold', 'Light', 'Bypass', 'Trim', 'Clip Level', 'Cycle Rate', 'Palette')):
+    for i, name in enumerate(('Trim', 'Bypass', 'Peak Hold', '0 VU', 'Clip Level', 'Light', 'Palette', 'Cycle Rate')):
         prog['Q-Link %d' % (i + 1)] = IDX[name]
     qlinks = {'version': 4, 'info': {'version': 1, 'type': 'CompleteDescription'},
               'Screen Mode Q-Links': {'version': 4, 'map': [
