@@ -1981,7 +1981,36 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "784 544 136 52"
+        "bounds": "722 544 132 52"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "lufs bypass",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "bypass_lufs_on.png",
+         "offImage": "bypass_lufs_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 5",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "1140 482 124 132"
        }
       },
       {
@@ -2105,7 +2134,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "982 544 44 50"
+        "bounds": "878 544 44 50"
        }
       },
       {
@@ -2142,7 +2171,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1030 544 144 50"
+        "bounds": "926 544 144 50"
        }
       },
       {
@@ -2171,7 +2200,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1178 544 44 50"
+        "bounds": "1074 544 44 50"
        }
       },
       {
@@ -2200,7 +2229,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "496 528 76 76"
+        "bounds": "490 528 76 76"
        }
       },
       {
@@ -2237,7 +2266,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "582 542 150 48"
+        "bounds": "568 542 120 48"
        }
       }
      ]

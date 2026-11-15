@@ -16,7 +16,7 @@ LUFS tab:
   * smoked-glass tuning strip: INTEGRATED | SHORT-TERM | TRUE PEAK MAX | GAIN REDUCTION
     Labels, plus AUTO status / auto gain / momentary / elapsed
     (CLEAR and RUN/HOLD sit at the strip's left end: they control the measurement)
-  * GAIN card: AUTO | TARGET < > | TRIM knob;  OUTPUT card: LIMITER | CEILING < >
+  * GAIN card: AUTO | TARGET < > | TRIM knob;  OUTPUT card: LIMITER | CEILING < >;  BYPASS
 SETUP tab: CALIBRATION | CLIP LEVEL, then LIGHT (STATIC | REACT + palette | CYCLE + rate).
 The plugin is stereo only; the retired mono parameters have no widgets.
 """
@@ -194,6 +194,7 @@ def main():
     # GAIN card (AUTO | TARGET | TRIM) and OUTPUT card (LIMITER | CEILING)
     lufs.append(button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('gain')))
     lufs.append(button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('output')))
+    lufs.append(button('lufs bypass', 'bypass_lufs', 1, 1, P('Bypass'), L.LUFS_BYPASS))   # the one global Bypass
     for card, value, down, up in (('gain', 'Target', 'Target Down', 'Target Up'), ('output', 'Ceiling', 'Ceiling Down', 'Ceiling Up')):
         lft, pill, rgt = L.lufs_stepper(card)
         lufs.append(button(down.lower(), 'arrow_l', 1, 1, P(down), lft))
@@ -251,7 +252,8 @@ def main():
     for ql, name in ((13, '0 VU'), (14, 'Clip Level'), (15, 'Light'), (16, 'Palette'), (9, 'Cycle Rate')):
         q2['Q-Link %d' % ql] = IDX[name]
     q3 = {'Q-Link %d' % i: -1 for i in range(1, 17)}   # LUFS tab (q2 is SETUP, now the third tab)
-    for ql, name in ((13, 'Target'), (14, 'Ceiling'), (15, 'Trim'), (16, 'LUFS Auto'), (9, 'Limiter'), (10, 'Measure')):
+    for ql, name in ((13, 'Target'), (14, 'Ceiling'), (15, 'Trim'), (16, 'LUFS Auto'), (9, 'Limiter'), (10, 'Measure'),
+                     (11, 'Bypass')):
         q3['Q-Link %d' % ql] = IDX[name]
     prog = {'Q-Link %d' % i: -1 for i in range(1, 17)}
     for i, name in enumerate(('Trim', 'Bypass', 'Peak Hold', '0 VU', 'Clip Level', 'Light', 'Palette', 'Cycle Rate',

@@ -666,6 +666,7 @@ def make_controls():
     pair('arrow_l', lft, '<', 'arrow')
     pair('arrow_r', rgt, '>', 'arrow')
     pair('clear', L.CLEAR_BUTTON, 'CLEAR', 'clear', size=21)
+    pair('bypass_lufs', L.LUFS_BYPASS, 'BYPASS', 'bypass', size=22)
     _, _, w, h = L.HOLD_BUTTON
     save(button(w, h, 'HOLD', 'seg', True, 21), 'hold_on.png')
     save(button(w, h, 'RUN', 'seg', False, 21), 'hold_off.png')
@@ -913,6 +914,7 @@ def lufs_preview(lbg, faces, light_i=0, hue=0.0, out='preview-lufs.png', limiter
     vx, vy, vw, vh = L.LUFS_TRIM_VALUE
     put_text(page, '0.0 dB', 26, L.CREAM + (255,), (vx + vw / 2.0, vy + vh / 2.0), slant=0.0, semi=True)
     btn('clear', L.CLEAR_BUTTON, False)
+    btn('bypass_lufs', L.LUFS_BYPASS, False)
     btn('hold', L.HOLD_BUTTON, False)
     screen = Image.new('RGBA', (L.W, 800), (34, 35, 44, 255))
     ImageDraw.Draw(screen).text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))

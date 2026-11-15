@@ -477,21 +477,23 @@ MOMENTARY_RECT = (int(READOUT_X0 + READOUT_W / 2 - 100), STATUS_ROW_Y, 200, 28)
 AUTO_GAIN_RECT = (DIAL_STRIP[0] + DIAL_STRIP[2] - 18 - 96, STATUS_ROW_Y, 96, 28)
 STATUS_RECT = (AUTO_GAIN_RECT[0] - 250, STATUS_ROW_Y, 244, 28)
 
-# Bottom cards: GAIN (AUTO | TARGET | TRIM: everything that sets the level) and OUTPUT
-# (LIMITER | CEILING: protection after the gain). Sections are (title, x0, x1) inside the card.
+# Bottom cards: GAIN (AUTO | TARGET | TRIM: everything that sets the level), OUTPUT
+# (LIMITER | CEILING: protection after the gain) and BYPASS (the same global Bypass as on METER).
+# Sections are (title, x0, x1) inside the card.
 LUFS_CARDS = {                                 # x, y, w, h
-    'gain':   (16, 482, 736, 132),
-    'output': (764, 482, 500, 132),
+    'gain':   (16, 482, 680, 132),
+    'output': (708, 482, 420, 132),
 }
 LUFS_SECTIONS = {
-    'gain':   [('AUTO', 0, 176), ('TARGET', 176, 456), ('TRIM', 456, 736)],
-    'output': [('LIMITER', 0, 176), ('CEILING', 176, 500)],
+    'gain':   [('AUTO', 0, 176), ('TARGET', 176, 456), ('TRIM', 456, 680)],
+    'output': [('LIMITER', 0, 160), ('CEILING', 160, 420)],
 }
+LUFS_BYPASS = (1140, 482, 124, 132)            # a BYPASS button the size of its card
 
 
 def lufs_toggle(card):
     x, y, w, h = LUFS_CARDS[card]
-    return (x + 20, y + 62, 136, 52)
+    return (x + 14, y + 62, 132, 52) if card == 'output' else (x + 20, y + 62, 136, 52)
 
 
 def lufs_stepper(card):
@@ -503,5 +505,5 @@ def lufs_stepper(card):
 
 
 _gx, _gy = LUFS_CARDS['gain'][0], LUFS_CARDS['gain'][1]
-LUFS_KNOB = (_gx + 480, _gy + 46, KNOB_SIZE, KNOB_SIZE)
-LUFS_TRIM_VALUE = (_gx + 566, _gy + 60, 150, 48)
+LUFS_KNOB = (_gx + 474, _gy + 46, KNOB_SIZE, KNOB_SIZE)
+LUFS_TRIM_VALUE = (_gx + 552, _gy + 60, 120, 48)

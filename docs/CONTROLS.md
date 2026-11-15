@@ -41,6 +41,7 @@ Layout: the readout strip holds the **measurement** controls at its left end (CL
 | **CEILING** ◀ ▶ | 14 | −6.0 … −0.1 dBTP in 0.1 steps (default −1.0). The highest true peak the LIMITER lets through. **With LIMITER off the ceiling does nothing**; watch for CLIP RISK. |
 | **CLEAR** | – | Restarts INTEGRATED, TRUE PEAK MAX, the elapsed time and AUTO's estimate. It never changes the gain, so the audio does not jump. Settings are untouched. |
 | **RUN / HOLD** | 10 | HOLD freezes INTEGRATED, TRUE PEAK MAX and the time; SHORT-TERM and M stay live, and AUTO keeps working. It is a measurement hold, not a mute. |
+| **BYPASS** | 11 | The same Bypass as on METER: either button switches both. Bypass skips everything (AUTO, TRIM and LIMITER); the output is the input, bit for bit. With LIMITER on the output keeps its 3.2 ms delay, so timing does not jump. |
 | CLIP lamps (either side) | – | Same as on METER; tap to reset. |
 
 Measurements are not saved with the project: after loading, every reading starts empty. Settings are saved.
