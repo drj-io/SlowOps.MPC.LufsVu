@@ -1,8 +1,8 @@
-// "Cycle" lighting: the dial colour travels once round the hue wheel every two bars.
+// "Cycle" lighting: the dial colour travels once round the hue wheel every N bars (default 2).
 //
 // While the host's song position is moving, the phase is locked to it:
-//     phase = frac(ppq / (2 bars in quarter notes)),  bar = numerator * 4 / denominator quarters
-// so the colour lands on the same hue at the same place in every two-bar phrase, in any
+//     phase = frac(ppq / (N bars in quarter notes)),  bar = numerator * 4 / denominator quarters
+// so the colour lands on the same hue at the same place in every N-bar phrase, in any
 // time signature and tempo. Position is judged by whether ppq actually advances (the MPC's
 // "playing" flag is not reliable). When the position stops, the cycle free-runs at the host
 // tempo (120 BPM if none) from wherever it is, so the dial never freezes. Locking onto the
@@ -26,22 +26,26 @@ struct TempoInfo
 class HueCycle
 {
 public:
-    static constexpr double kBars = 2.0;      // one full hue cycle every two bars
+    static constexpr double kDefaultBars = 2.0;  // one full hue cycle every two bars
     static constexpr double kGlideS = 0.15;   // lock-on glide time
 
     void reset() { phase_ = 0.0; hasLast_ = false; locked_ = false; }
 
-    static double cycleQuarters(int num, int den)
+    // Cycle length in bars (1, 2, 4, 8 ...). Changing it re-glides onto the song position.
+    void setBars(double bars) { if (bars > 0.0 && bars != bars_) { bars_ = bars; locked_ = false; } }
+    double bars() const { return bars_; }
+
+    static double cycleQuarters(int num, int den, double bars = kDefaultBars)
     {
         if (num <= 0 || den <= 0) { num = 4; den = 4; }
-        return kBars * (double)num * 4.0 / (double)den;
+        return bars * (double)num * 4.0 / (double)den;
     }
 
     // Advance by one block of n samples; returns the phase 0..1 at the end of the block.
     double advance(const TempoInfo& t, int n, double sampleRate)
     {
         const double bpm = (t.tempoValid && t.bpm > 1.0 && t.bpm < 1000.0) ? t.bpm : 120.0;
-        const double cycleQ = cycleQuarters(t.timeSigNumerator, t.timeSigDenominator);
+        const double cycleQ = cycleQuarters(t.timeSigNumerator, t.timeSigDenominator, bars_);
         const double dq = (double)n / sampleRate * bpm / 60.0;       // quarters in this block
         const bool moving = t.ppqValid && hasLast_ && t.ppq != lastPpq_;
         hasLast_ = t.ppqValid;
@@ -71,6 +75,7 @@ public:
 private:
     static double wrap(double x) { x -= std::floor(x); return x >= 1.0 ? 0.0 : x; }
 
+    double bars_ = kDefaultBars;
     double phase_ = 0.0;
     double lastPpq_ = 0.0;
     bool hasLast_ = false;

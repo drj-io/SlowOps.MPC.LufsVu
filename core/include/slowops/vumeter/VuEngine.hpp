@@ -5,6 +5,7 @@
 // output signal. With trim settled at unity the output is a bit-exact copy.
 // Standard library only; realtime safe (no allocation, locks or I/O in process()).
 #pragma once
+#include "Correlation.hpp"
 #include "NeedleDynamics.hpp"
 #include "PeakDetector.hpp"
 #include "Trim.hpp"
@@ -41,6 +42,7 @@ public:
         sampleRate_ = sampleRate;
         for (auto& n : needles_) n.prepare(sampleRate);
         for (auto& p : peaks_) p.prepare(sampleRate);
+        corr_.prepare(sampleRate);
         trim_.prepare(sampleRate);
         trim_.snap();
         reset();
@@ -50,6 +52,8 @@ public:
     {
         for (auto& n : needles_) n.reset();
         for (auto& p : peaks_) p.reset();
+        corr_.reset();
+        clearMax();
         trim_.snap();
     }
 
@@ -63,6 +67,13 @@ public:
     void setTrimDb(float db, bool bypass) { trim_.setTargetGain(bypass ? 1.0f : Trim::dbToGain(db)); }
     void setPeakHold(bool on) { for (auto& p : peaks_) p.setHold(on); }
     void resetClips() { for (auto& p : peaks_) p.reset(); }
+    void setClipThresholdDbfs(double db) { for (auto& p : peaks_) p.setThreshold((float)std::pow(10.0, db / 20.0)); }
+
+    // Highest needle deflection since the last clearMax() (what the needle actually showed).
+    double maxDeflection(int m) const { return max_[m]; }
+    void clearMax() { for (double& m : max_) m = 0.0; }
+
+    const Correlation& correlation() const { return corr_; }
 
     // inR may equal inL (mono input). outL/outR may alias inL/inR (in place) and outR may be null.
     void process(const float* inL, const float* inR, float* outL, float* outR, int n)
@@ -107,12 +118,20 @@ private:
         needles_[kLeft].step(std::fabs(dl) * drive_);
         needles_[kRight].step(std::fabs(dr) * drive_);
         needles_[kMono].step(std::fabs(m) * drive_);
+        corr_.process(dl, dr);
+        for (int k = 0; k < kNumMeters; ++k)
+        {
+            const double y = needles_[k].deflection();
+            if (y > max_[k]) max_[k] = y;
+        }
     }
 
     double sampleRate_ = 44100.0;
     double drive_ = (kPi / 2.0) / 0.12589254117941673;
     NeedleDynamics needles_[kNumMeters];
     PeakDetector peaks_[2];
+    Correlation corr_;
+    double max_[kNumMeters] = { 0.0, 0.0, 0.0 };
     Trim trim_;
 };
 

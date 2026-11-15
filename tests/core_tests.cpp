@@ -3,6 +3,7 @@
 #include "slowops/vumeter/VuEngine.hpp"
 #include "slowops/vumeter/Heat.hpp"
 #include "slowops/vumeter/HueCycle.hpp"
+#include "slowops/vumeter/AutoTrim.hpp"
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -52,6 +53,7 @@ struct Rig
     }
 };
 
+static double deflection(double vu) { return std::pow(10.0, vu / 20.0); }
 static double dbToAmp(double db) { return std::pow(10.0, db / 20.0); }
 
 static Gen sine(double sr, double peakDb, double hz = 1000.0, double polL = 1.0, double polR = 1.0)
@@ -372,10 +374,97 @@ static void testCycle()
     }
 }
 
+static void testV02()
+{
+    std::printf("Cycle rate\n");
+    for (double bars : {1.0, 4.0, 8.0})
+    {
+        HueCycle c; c.reset(); c.setBars(bars);
+        TempoInfo t; t.tempoValid = t.ppqValid = true; t.bpm = 120.0;
+        runCycle(c, t, 1.0, true);
+        bool ok = true;
+        for (int i = 0; i < 20; ++i)
+        {
+            const double ph = runCycle(c, t, 0.25, true);
+            ok = ok && hueDist(ph, std::fmod(t.ppq, 4.0 * bars) / (4.0 * bars)) < 0.002;
+        }
+        CHECK(ok, "%.0f-bar cycle locks to the song position", bars);
+    }
+
+    std::printf("Clip threshold\n");
+    {
+        Rig rig(44100); rig.e.setClipThresholdDbfs(-1.0);
+        rig.run(0.1, [](long n, float& l, float& r) { l = (n == 10) ? 0.90f : 0.0f; r = (n == 10) ? 0.88f : 0.0f; });
+        CHECK(rig.e.consumeClip(kLeft) && !rig.e.consumeClip(kRight), "-1 dBFS: 0.90 lights, 0.88 does not (threshold 0.891)");
+        rig.e.setClipThresholdDbfs(0.0);
+        rig.e.resetClips();
+        rig.run(0.1, [](long n, float& l, float& r) { l = (n == 10) ? 0.999f : 0.0f; r = 0.0f; });
+        CHECK(!rig.e.consumeClip(kLeft), "0 dBFS: 0.999 does not light");
+    }
+
+    std::printf("Max VU tracking\n");
+    {
+        Rig rig(44100);
+        rig.run(1.5, sine(44100, -15.0));   // +3 VU
+        rig.run(2.0, sine(44100, -24.0));   // -6 VU
+        CHECK(std::fabs(deflectionToVU(rig.e.maxDeflection(kLeft)) - 3.1) < 0.15,
+              "max holds the highest reading (+%.2f VU incl. overshoot) after the level drops", deflectionToVU(rig.e.maxDeflection(kLeft)));
+        rig.e.clearMax();
+        rig.run(1.0, sine(44100, -24.0));
+        CHECK(std::fabs(deflectionToVU(rig.e.maxDeflection(kLeft)) + 6.0) < 0.2, "clear restarts from the current level (%.2f VU)",
+              deflectionToVU(rig.e.maxDeflection(kLeft)));
+    }
+
+    std::printf("Phase correlation\n");
+    {
+        Rig a(44100); a.run(1.0, sine(44100, -18.0));
+        CHECK(a.e.correlation().hasSignal() && a.e.correlation().value() > 0.99, "identical L/R: +1 (%.3f)", a.e.correlation().value());
+        Rig b(44100); b.run(1.0, sine(44100, -18.0, 1000.0, 1.0, -1.0));
+        CHECK(b.e.correlation().value() < -0.99, "anti-phase: -1 (%.3f)", b.e.correlation().value());
+        Rig c(44100);
+        c.run(2.0, [](long n, float& l, float& r) {
+            l = (float)(0.1 * std::sin(2 * kPi * 440.0 * n / 44100.0)); r = (float)(0.1 * std::sin(2 * kPi * 631.0 * n / 44100.0)); });
+        CHECK(std::fabs(c.e.correlation().value()) < 0.1, "unrelated tones: about 0 (%.3f)", c.e.correlation().value());
+        Rig d(44100); d.run(1.0, [](long, float& l, float& r) { l = r = 0.0f; });
+        CHECK(!d.e.correlation().hasSignal(), "silence: no reading");
+        Rig e(44100); e.run(1.0, [](long n, float& l, float& r) { l = (float)(0.1 * std::sin(n * 0.1)); r = 0.0f; });
+        CHECK(e.e.correlation().hasSignal() && std::fabs(e.e.correlation().value()) < 1e-6, "one side silent: 0");
+    }
+
+    std::printf("AUTO TRIM\n");
+    {
+        Rig rig(44100);
+        AutoTrim at; at.start(3.0, 44100.0);
+        auto s = sine(44100, -24.0);    // -6 VU at ref -18
+        rig.run(1.0, s);                // needle settles first (the plugin listens to the live needle)
+        while (at.active())
+        {
+            rig.run(512.0 / 44100.0, s);
+            at.feed(rig.e.deflection(kLeft), 512);
+        }
+        double corr = 0;
+        CHECK(at.takeResult(corr) && std::fabs(corr - 6.0) < 0.2, "a -6 VU program asks for +%.2f dB", corr);
+        CHECK(!at.takeResult(corr), "the result is taken once");
+    }
+    {
+        AutoTrim at; at.start(1.0, 44100.0);
+        for (int i = 0; i < 100; ++i) at.feed(0.0, 512);
+        double corr = 1;
+        CHECK(at.takeResult(corr) && corr == 0.0 && !at.heardSignal(), "silence: no change");
+    }
+    {
+        AutoTrim at; at.start(2.0, 44100.0);
+        for (int i = 0; i < 200; ++i) at.feed(i % 2 ? deflection(-3.0) : 0.0, 512);   // music with gaps
+        double corr = 0;
+        CHECK(at.takeResult(corr) && std::fabs(corr - 3.0) < 0.01, "gaps below the gate are ignored (+%.2f dB)", corr);
+    }
+}
+
 int main()
 {
     testHeat();
     testCycle();
+    testV02();
     testCalibration();
     testScale();
     testStep();

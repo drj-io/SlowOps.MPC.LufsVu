@@ -12,6 +12,9 @@ public:
     void prepare(double sampleRate) { holdLength_ = (int64_t)std::llround(2.0 * sampleRate); reset(); }
     void reset() { hit_ = false; holdLeft_ = 0; peak_ = 0.0f; }
 
+    // Clip threshold as a linear sample magnitude (1.0 = 0 dBFS, 0.891 = -1 dBFS ...).
+    void setThreshold(float linear) { threshold_ = linear > 0.0f ? linear : 1.0f; }
+
     // holdEnabled: the 2 s latch. Without it the indicator lights for the UI frame in which a clip occurred.
     void setHold(bool enabled) { hold_ = enabled; if (!enabled) holdLeft_ = 0; }
 
@@ -19,7 +22,7 @@ public:
     {
         const float a = std::fabs(x);              // NaN compares false below: not counted as a clip
         if (a > peak_ && a < 1e30f) peak_ = a;
-        if (a >= 1.0f)
+        if (a >= threshold_)
         {
             hit_ = true;
             if (hold_) holdLeft_ = holdLength_;
@@ -44,6 +47,7 @@ public:
 
 private:
     bool hold_ = true;
+    float threshold_ = 1.0f;
     bool hit_ = false;
     int64_t holdLeft_ = 0;
     int64_t holdLength_ = 88200;
