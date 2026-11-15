@@ -30,11 +30,11 @@ constexpr int kStereoPer = kStereoFrames / kStereoSectors;
 constexpr int kMonoPer   = kMonoFrames / kMonoSectors;
 // Glow filmstrip (React and Cycle lighting share one strip):
 //   [palette 0 heat 0..15][palette 1 heat 0..15][palette 2 heat 0..15]  React (Thermal, Neon, Amber)
-//   [hue 0..35]                                                         Cycle (10 degrees per step)
+//   [hue 0..119]                                                        Cycle (3 degrees per step: smooth even at 8 bars)
 //   [flash]                                                             white-hot clip flash
 constexpr int kHeatFrames = 16;
 constexpr int kPalettes = 3;
-constexpr int kHueFrames = 36;
+constexpr int kHueFrames = 120;
 constexpr int kHueFirst = kHeatFrames * kPalettes;
 constexpr int kFlashFrame = kHueFirst + kHueFrames;
 constexpr int kGlowFrames = kFlashFrame + 1;

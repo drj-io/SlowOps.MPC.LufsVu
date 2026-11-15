@@ -57,10 +57,10 @@ STATIC_LIGHTS = ['warm', 'cool', 'off']          # baked into whole face images
 # so it is rendered at reduced resolution and scaled up by the MPC; the printed scale, bezel
 # and legends sit above it on a full-resolution transparent overlay, so text stays crisp.
 # Glow strip frames (plugin "Glow" parameter), must match SlowOpsVUMeter.cpp:
-#   3 React palettes x 16 heat steps, then 36 Cycle hue steps (10 degrees), then 1 clip-flash frame.
+#   3 React palettes x 16 heat steps, then 120 Cycle hue steps (3 degrees), then 1 clip-flash frame.
 HEAT_FRAMES = 16
 PALETTE_ORDER = ['thermal', 'neon', 'amber']     # matches the plugin's Palette choices
-HUE_FRAMES = 36
+HUE_FRAMES = 120
 HUE_FIRST = HEAT_FRAMES * len(PALETTE_ORDER)
 FLASH_FRAME = HUE_FIRST + HUE_FRAMES
 GLOW_FRAMES = FLASH_FRAME + 1

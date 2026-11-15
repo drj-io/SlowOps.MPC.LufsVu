@@ -25,8 +25,8 @@ enum P { kReserved = 0, kMode, kRef, kPeak, kLight, kBypass, kTrim, kResetClip,
          kView, kClipL, kClipR, kClipIn, kNeedleL0, kNeedleR0 = kNeedleL0 + 4, kNeedleM0 = kNeedleR0 + 4,
          kGlow = kNeedleM0 + 8,
          kAutoTrim, kAutoBusy, kCorr, kMaxL, kMaxR, kMaxM, kClipThr, kCycleBars, kPalette, kNumParams };
-// Glow frames: 3 palettes x 16 heat steps, then 36 hue steps, then the flash frame.
-static constexpr int kGlowMax = 84, kHueFirst = 48, kFlash = 84;
+// Glow frames: 3 palettes x 16 heat steps, then 120 hue steps, then the flash frame.
+static constexpr int kHues = 120, kHueFirst = 48, kFlash = kHueFirst + kHues, kGlowMax = kFlash;
 static float light(int i) { return (float)i / 4.0f; }   // Warm, Cool, Off, React, Cycle
 static long viewOf(float v) { return std::lround(v * 9); }
 // Pseudo-indices for the needle decoder.
@@ -341,8 +341,8 @@ static void cycle()
 {
     std::printf("Cycle lighting\n");
     auto glow = [](Plug& p) { return (int)std::lround(p.get(kGlow) * kGlowMax); };
-    auto expectHue = [](double ppq, double cycleQ) { return kHueFirst + (int)std::lround(std::fmod(ppq, cycleQ) / cycleQ * 36) % 36; };
-    auto hueDiff = [](int a, int b) { int d = std::abs(a - b) % 36; return std::min(d, 36 - d); };
+    auto expectHue = [](double ppq, double cycleQ) { return kHueFirst + (int)std::lround(std::fmod(ppq, cycleQ) / cycleQ * kHues) % kHues; };
+    auto hueDiff = [](int a, int b) { int d = std::abs(a - b) % kHues; return std::min(d, kHues - d); };
     {
         Plug p; p.set(kLight, light(4)); p.transport = p.rolling = true; p.bpm = 120.0; p.input = program(p.sr);
         p.runFor(1.0);
@@ -354,7 +354,7 @@ static void cycle()
             worst = std::max(worst, hueDiff(glow(p), expectHue(p.ppq, 8.0)));
             inRange = inRange && glow(p) >= kHueFirst && glow(p) < kFlash;
         }
-        CHECK(inRange, "Cycle only uses the hue frames (48..83)");
+        CHECK(inRange, "Cycle only uses the hue frames (48..167)");
         CHECK(worst <= 1, "120 BPM 4/4: hue follows the song position, one cycle per 2 bars (worst %d step)", worst);
         CHECK(p.bitExact, "Cycle lighting never touches the audio");
     }
@@ -363,7 +363,7 @@ static void cycle()
         p.runFor(1.0);
         const int a = glow(p);
         p.runFor(2.0);
-        CHECK(hueDiff(glow(p), expectHue(p.ppq, 6.0)) <= 1 && hueDiff(a, glow(p)) == 18,
+        CHECK(hueDiff(glow(p), expectHue(p.ppq, 6.0)) <= 1 && std::abs(hueDiff(a, glow(p)) - kHues / 2) <= 1,
               "90 BPM 6/8: half a cycle in 2 s (two bars = 6 quarters = 4 s)");
     }
     {
@@ -371,7 +371,7 @@ static void cycle()
         p.runFor(0.5);
         const int a = glow(p);
         p.runFor(1.0);
-        CHECK(hueDiff(a, glow(p)) == 9, "stopped: keeps cycling at the tempo (a quarter turn per second at 120 BPM)");
+        CHECK(std::abs(hueDiff(a, glow(p)) - kHues / 4) <= 1, "stopped: keeps cycling at the tempo (a quarter turn per second at 120 BPM)");
     }
 }
 
@@ -457,8 +457,8 @@ static void v02()
         for (int i = 0; i < 12; ++i)
         {
             p.runFor(0.5);
-            const int want = kHueFirst + (int)std::lround(std::fmod(p.ppq, 32.0) / 32.0 * 36) % 36;
-            int d = std::abs(glow(p) - want) % 36; worst = std::max(worst, std::min(d, 36 - d));
+            const int want = kHueFirst + (int)std::lround(std::fmod(p.ppq, 32.0) / 32.0 * kHues) % kHues;
+            int d = std::abs(glow(p) - want) % kHues; worst = std::max(worst, std::min(d, kHues - d));
         }
         CHECK(worst <= 1, "Cycle rate 8 bars: one trip per 32 beats (worst %d step)", worst);
     }

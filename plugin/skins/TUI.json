@@ -156,7 +156,7 @@
          "imageType": "FilmStrip",
          "colour": "0",
          "image": "glow_halo.png",
-         "numFrames": 85,
+         "numFrames": 169,
          "handleName": "Parameter 28"
         }
        },
@@ -274,7 +274,7 @@
          "imageType": "FilmStrip",
          "colour": "0",
          "image": "glow_stereo.png",
-         "numFrames": 85,
+         "numFrames": 169,
          "handleName": "Parameter 28"
         }
        },

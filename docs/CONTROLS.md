@@ -23,7 +23,7 @@ The meter is stereo: one needle for L and one for R. It only measures; at 0.0 dB
 | **CLIP LEVEL**: 0 / −0.3 / −1 / −3 dBFS | 14 | The level that lights the CLIP lamps. Use −1 or −3 for headroom before resampling or bouncing. |
 | **LIGHT**: STATIC (WARM / COOL / OFF) | 15 | A fixed dial backlight. |
 | **LIGHT**: REACT, with **PALETTE** THERMAL / NEON / AMBER | 15, 16 | Colours the dials and the cabinet halo by how loud the music is. It warms up in about 120 ms and cools over about 0.9 s, like a glowing filament. **Thermal** runs deep blue when quiet → ice blue → amber → red at about 0 VU → magenta → purple when pinned at +3. **Neon** runs cyan → violet → hot magenta. **Amber** runs dim ember → gold → white-hot. It follows the louder needle. |
-| **LIGHT**: CYCLE, with **RATE** 1 / 2 / 4 / 8 BARS | 15, 9 | Travels once round the colour wheel per RATE (default 2 bars), in 36 steps. While the song plays it locks to the song position, so the same colour lands on the same beat of every phrase, in any tempo and time signature. Pressing Play glides it onto the beat. Stopped, it keeps cycling at the project tempo. |
+| **LIGHT**: CYCLE, with **RATE** 1 / 2 / 4 / 8 BARS | 15, 9 | Travels once round the colour wheel per RATE (default 2 bars), in 120 fine steps (3° each), so even an 8-bar cycle drifts smoothly. While the song plays it locks to the song position, so the same colour lands on the same beat of every phrase, in any tempo and time signature. Pressing Play glides it onto the beat. Stopped, it keeps cycling at the project tempo. |
 
 ## What a VU meter shows
 

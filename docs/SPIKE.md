@@ -22,7 +22,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 4. **Transparent tap areas.** Transparent Buttons over the CLIP lamps fire the `Reset Clip` trigger.
 
 5. **React and Cycle lighting.**
-   - An 85-step `Glow` parameter drives three filmstrips: a cabinet halo strip and two face-glow strips, all drawn at 1/4 size. The steps are 3 palettes × 16 heat steps, then 36 hue steps, then 1 white clip-flash frame. The glow bleeds 10 px under the bezel so its soft edge is hidden.
+   - A 169-step `Glow` parameter drives three filmstrips: a cabinet halo strip and two face-glow strips, all drawn at 1/4 size. The steps are 3 palettes × 16 heat steps, then 120 hue steps, then 1 white clip-flash frame. The glow bleeds 10 px under the bezel so its soft edge is hidden.
    - The MPC must scale them up to their bounds. It is not yet known whether it scales filmstrip frames, or how smoothly.
    - The glow sits under a full-resolution transparent overlay (bezel, scale, legends).
 
