@@ -2285,7 +2285,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 368",
+        "bounds": "24 88 1232 512",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/0/10/Parameter 8"
         ]
@@ -2314,7 +2314,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 368",
+        "bounds": "24 88 1232 512",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/1/10/Parameter 8"
         ]
@@ -2343,7 +2343,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 368",
+        "bounds": "24 88 1232 512",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/2/10/Parameter 8"
         ]
@@ -2374,7 +2374,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 368",
+        "bounds": "24 88 1232 512",
         "additionalInvalidatingHandles": [
          "RangedEnabling/3/4/10/Parameter 8"
         ]
@@ -2403,7 +2403,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "30 70 1220 368",
+        "bounds": "24 88 1232 512",
         "additionalInvalidatingHandles": [
          "RangedEnabling/3/4/10/Parameter 8"
         ]
@@ -2434,7 +2434,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "106 143 223 225"
+        "bounds": "60 223 264 267"
        }
       },
       {
@@ -2462,7 +2462,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "195 105 152 250"
+        "bounds": "166 177 179 297"
        }
       },
       {
@@ -2490,7 +2490,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "312 105 139 248"
+        "bounds": "308 177 163 294"
        }
       },
       {
@@ -2518,7 +2518,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "344 127 206 237"
+        "bounds": "346 203 245 282"
        }
       },
       {
@@ -2546,7 +2546,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "712 143 223 225"
+        "bounds": "668 223 264 267"
        }
       },
       {
@@ -2574,7 +2574,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "801 105 152 250"
+        "bounds": "774 177 179 297"
        }
       },
       {
@@ -2602,7 +2602,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "918 105 139 248"
+        "bounds": "916 177 163 294"
        }
       },
       {
@@ -2630,7 +2630,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "950 127 206 237"
+        "bounds": "954 203 245 282"
        }
       },
       {
@@ -2658,7 +2658,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "70 404 30 30"
+        "bounds": "64 553 30 30"
        }
       },
       {
@@ -2687,7 +2687,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "66 400 130 38"
+        "bounds": "60 549 130 38"
        }
       },
       {
@@ -2715,7 +2715,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1180 404 30 30"
+        "bounds": "1186 553 30 30"
        }
       },
       {
@@ -2744,7 +2744,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1084 400 130 38"
+        "bounds": "1090 549 130 38"
        }
       },
       {
@@ -2770,7 +2770,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "500 400 280 40",
+        "bounds": "500 548 280 40",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/0/5/Parameter 2"
         ]
@@ -2799,7 +2799,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "500 400 280 40",
+        "bounds": "500 548 280 40",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/1/5/Parameter 2"
         ]
@@ -2828,7 +2828,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "500 400 280 40",
+        "bounds": "500 548 280 40",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/2/5/Parameter 2"
         ]
@@ -2857,7 +2857,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "500 400 280 40",
+        "bounds": "500 548 280 40",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/3/5/Parameter 2"
         ]
@@ -2886,7 +2886,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "500 400 280 40",
+        "bounds": "500 548 280 40",
         "additionalInvalidatingHandles": [
          "IndexedEnabling/4/5/Parameter 2"
         ]
@@ -2917,7 +2917,7 @@
         "showWhenDataModelInvalid": "Show",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "800 401 190 38"
+        "bounds": "800 549 190 38"
        }
       },
       {
@@ -2954,7 +2954,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "436 344 150 24"
+        "bounds": "432 470 150 24"
        }
       },
       {
@@ -2991,7 +2991,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1042 344 150 24"
+        "bounds": "1040 470 150 24"
        }
       }
      ]
@@ -3119,7 +3119,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "glow_stereo.png",
+         "image": "glow_lufs.png",
          "numFrames": 169,
          "handleName": "Parameter 28"
         }

@@ -73,7 +73,7 @@ def main():
         for k in range(sectors):
             needle_frames['Parameter %d' % (first + k)] = per + 1
 
-    SCALED = {'glow_stereo.png': L.REACT_GLOW_SCALE, 'glow_mono.png': L.REACT_GLOW_SCALE}
+    SCALED = {'glow_stereo.png': L.REACT_GLOW_SCALE, 'glow_lufs.png': L.LUFS_GLOW_SCALE}
     decoded = [0]
     widgets = [0]
     defs = {d['key']: d['value'] for d in page['componentDefinitions']['localComponentDefinitions']}
@@ -116,9 +116,9 @@ def main():
                     else:
                         fw, fh = size[0], size[1] // nf
                         # React glow strips are smooth gradients drawn at reduced size and scaled UP on
-                        # purpose (the LUFS glow by 4 x 0.8). Nothing may rely on scaling an image down.
-                        k = SCALED.get(data['image'], 1) * (L.LUFS_SCALE if name == 'lufs glow' else 1)
-                        if abs(fw * k - w) > 1 or abs(fh * k - h) > 1:
+                        # purpose (rounding allows k px either way). Nothing else may be scaled.
+                        k = SCALED.get(data['image'], 1)
+                        if abs(fw * k - w) > max(1, k - 1) or abs(fh * k - h) > max(1, k - 1):
                             fail('%s: frame %dx%d (x%g) but bounds %dx%d' % (name, fw, fh, k, w, h))
                         decoded[0] += fw * fh * nf * 4
                     want = needle_frames.get(data['handleName'])

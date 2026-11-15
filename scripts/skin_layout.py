@@ -138,12 +138,16 @@ def argb(rgb, a=255):
 
 # ---------------------------------------------------------------------------- page regions
 ORNAMENT = (0, 0, W, 56)
-CABINET = (16, 58, 1248, 394)                  # walnut cabinet with neon edge
-CABINET_INNER = (30, 70, 1220, 368)            # region covered by the per-view face images (height divisible by 4)
+# METER: the walnut cabinet fills the page. Deep rails: the brass sunburst is inlaid in the top
+# rail, the lamps / 0 VU plate / PHASE sit on the bottom rail.
+CABINET = (8, 4, 1264, 620)                    # walnut cabinet with neon edge
+CABINET_INNER = (24, 88, 1232, 512)            # region covered by the per-view face images (both sides divisible by 4)
+ORNAMENT_Y = 20                                # top of the inlaid sunburst (drawn 60 px tall)
+RAIL_Y = 568                                   # centre line of the bottom rail
 
 # METER has no control strip: PEAK HOLD lives on SETUP, BYPASS and TRIM on the LUFS tab.
 KNOB_SIZE = 76
-CORR = (800, 401, 190, 38)                                             # phase correlation strip (bottom rail)
+CORR = (800, RAIL_Y - 19, 190, 38)                                             # phase correlation strip (bottom rail)
 CORR_STEPS = 21                                                        # must match the plugin (0 = no signal)
 MAX_LABEL_W, MAX_LABEL_H = 150, 24                                     # MAX VU readouts (lower-right of each dial)
 
@@ -208,17 +212,21 @@ PALETTE_LABELS = ['THERMAL', 'NEON', 'AMBER']
 # ---------------------------------------------------------------------------- dials
 # A dial "window" is the cream face inside a brass bezel. Needle sprites are positioned
 # relative to the window origin.
-STEREO_WINDOWS = [(54, 84, 566, 300), (660, 84, 566, 300)]
-MONO_WINDOW = (54, 84, 1172, 300)
+STEREO_WINDOWS = [(56, 110, 560, 400), (664, 110, 560, 400)]   # 1.4 : 1, like a classic VU movement
+MONO_WINDOW = (54, 84, 1172, 300)              # (retired in v0.2)
 BEZEL = 14
+
+# LUFS tab source geometry: the v0.2 METER dials (566 x 300), drawn there at LUFS_SCALE.
+LUFS_SRC_INNER = (30, 70, 1220, 368)
+LUFS_SRC_WINDOWS = [(54, 84, 566, 300), (660, 84, 566, 300)]
 
 # Lamps and plate under the dials (cabinet bottom rail).
 LAMP = 30
-STEREO_LAMPS = [(70, 404), (1180, 404)]        # top-left of each lamp (right caption sits left of its lamp)
+STEREO_LAMPS = [(64, RAIL_Y - 15), (1186, RAIL_Y - 15)]   # top-left of each lamp (right caption sits left of its lamp)
 LAMP_CAPTION_SIDE = {0: 'right', 1: 'left'}
 MONO_LAMP = (70, 404)
 LAMP_HIT_W = 130                               # reset-clip tap area (lamp + caption)
-PLATE = (500, 400, 280, 40)
+PLATE = (500, RAIL_Y - 20, 280, 40)
 
 FULL_SCALE_VU = 3.0
 TICKS_MAJOR = [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3]
@@ -243,8 +251,10 @@ class Dial:
     """
 
     def __init__(self, window, pivot, scale_r, angle_m20, angle_p3, needle_r0, needle_r1,
-                 needle_w, label_size, legend, sub_legend, frames=None, sectors=None, clip_y=None):
+                 needle_w, label_size, legend, sub_legend, frames=None, sectors=None, clip_y=None,
+                 inner=None):
         self.window = window
+        self.inner = inner or CABINET_INNER        # the face image this dial is drawn into
         self.pivot = pivot
         self.scale_r = scale_r
         f20 = fraction(-20)
@@ -273,10 +283,19 @@ class Dial:
 
 def stereo_dial(i):
     w = STEREO_WINDOWS[i]
+    return Dial(w, pivot=(w[2] / 2.0, 392.0), scale_r=285, angle_m20=-50.0, angle_p3=50.0,
+                needle_r0=48, needle_r1=316, needle_w=3.0, label_size=28,
+                legend='VU', sub_legend='LEFT' if i == 0 else 'RIGHT',
+                frames=STEREO_FRAMES, sectors=STEREO_SECTORS)
+
+
+def lufs_dial(i):
+    """A LUFS-tab dial in its source geometry (before LUFS_SCALE)."""
+    w = LUFS_SRC_WINDOWS[i]
     return Dial(w, pivot=(w[2] / 2.0, 292.0), scale_r=232, angle_m20=-50.0, angle_p3=50.0,
                 needle_r0=40, needle_r1=262, needle_w=2.6, label_size=24,
                 legend='VU', sub_legend='LEFT' if i == 0 else 'RIGHT',
-                frames=STEREO_FRAMES, sectors=STEREO_SECTORS)
+                frames=STEREO_FRAMES, sectors=STEREO_SECTORS, inner=LUFS_SRC_INNER)
 
 
 def mono_dial():
@@ -396,7 +415,7 @@ def label_px(size):
 
 
 def lufs_needle_rect(dial, k):
-    """LUFS-tab bounds (and native size) of needle sector k of a METER dial."""
+    """LUFS-tab bounds (and native size) of needle sector k of a lufs_dial()."""
     x, y, w, h = sector_box(dial, k)
     return lufs_rect((dial.window[0] + x, dial.window[1] + y, w, h))
 
@@ -409,12 +428,17 @@ def lufs_max_rect(window):
     x, y, w, h = lufs_rect(max_label_rect(window))
     return (x - 30, y - 6, w + 30, h + 10)
 LUFS_CABINET = (16, 58, 1248, 414)
-LUFS_FACE = (152, 66, 976, 294)                # CABINET_INNER scaled by LUFS_SCALE
+LUFS_FACE = (152, 66, 976, 294)                # LUFS_SRC_INNER scaled by LUFS_SCALE
+LUFS_GLOW_SCALE = 8                            # the LUFS glow strip is 1/8 size (a soft gradient; saves memory)
+
+
+def lufs_glow_frame():
+    return (LUFS_FACE[2] // LUFS_GLOW_SCALE, int(round(LUFS_FACE[3] / float(LUFS_GLOW_SCALE))))
 
 
 def lufs_xy(x, y):
-    """METER-tab point (inside CABINET_INNER) -> LUFS-tab point."""
-    return (LUFS_FACE[0] + (x - CABINET_INNER[0]) * LUFS_SCALE, LUFS_FACE[1] + (y - CABINET_INNER[1]) * LUFS_SCALE)
+    """Source point (inside LUFS_SRC_INNER) -> LUFS-tab point."""
+    return (LUFS_FACE[0] + (x - LUFS_SRC_INNER[0]) * LUFS_SCALE, LUFS_FACE[1] + (y - LUFS_SRC_INNER[1]) * LUFS_SCALE)
 
 
 def lufs_rect(r):

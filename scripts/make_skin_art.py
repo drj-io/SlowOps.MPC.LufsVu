@@ -126,7 +126,8 @@ def wood(w, h):
     return ImageOps.colorize(n, black=L.WALNUT_DARK, white=L.WALNUT_LIGHT, mid=L.WALNUT)
 
 
-def ornament(bg):
+def ornament(bg, y0=0):
+    """Brass sunburst and rules, 60 px tall, top at y0 (METER inlays it in the cabinet's top rail)."""
     d = ImageDraw.Draw(bg)
     cx, base = 640, 46
     big = Image.new('RGBA', (L.W * SS, 60 * SS), (0, 0, 0, 0))
@@ -143,8 +144,8 @@ def ornament(bg):
     bd.ellipse([(cx - 7) * SS, (base - 7) * SS, (cx + 7) * SS, (base + 7) * SS], fill=L.BRASS + (255,))
     big = big.resize((L.W, 60), Image.LANCZOS)
     glow = big.filter(ImageFilter.GaussianBlur(4))
-    bg.alpha_composite(glow)
-    bg.alpha_composite(big)
+    bg.alpha_composite(glow, (0, y0))
+    bg.alpha_composite(big, (0, y0))
     del d
 
 
@@ -170,9 +171,9 @@ def make_background():
     for y in range(0, L.H, 32):
         gd.line([(0, y), (L.W, y)], fill=(60, 64, 110, 18))
     bg.alpha_composite(grid)
-    ornament(bg)
 
-    # cabinet: neon halo, walnut, brass inner line
+    # cabinet: neon halo, walnut, brass inner line. It fills the page; deep walnut rails carry
+    # the inlaid sunburst (top) and the lamps / 0 VU plate / PHASE (bottom).
     cx, cy, cw, ch = L.CABINET
     bg.alpha_composite(glow_rect(bg.size, L.CABINET, 30, L.NEON, 10, 6, 170))
     bg.alpha_composite(glow_rect(bg.size, L.CABINET, 30, (255, 140, 60), 3, 3, 120))
@@ -182,12 +183,30 @@ def make_background():
     paste(bg, wd, rr_mask(cw, ch, (0, 0, cw, ch), 30), (cx, cy))
     bg.alpha_composite(glow_rect(bg.size, (cx + 1, cy + 1, cw - 2, ch - 2), 29, (255, 120, 90), 0.7, 2, 230))
     bg.alpha_composite(glow_rect(bg.size, (cx + 8, cy + 8, cw - 16, ch - 16), 24, L.BRASS, 0.5, 1, 140))
-    # bottom rail rules beside the plate
+    # brass inlay: a fine second line inside the first, and the sunburst in the top rail
+    bg.alpha_composite(glow_rect(bg.size, (cx + 16, cy + 16, cw - 32, ch - 32), 18, L.BRASS, 0.4, 1, 90))
+    ornament(bg, L.ORNAMENT_Y)
+    # bottom rail rule beside the plate
     rail = Image.new('RGBA', bg.size, (0, 0, 0, 0))
     rd = ImageDraw.Draw(rail)
     for x0, x1 in ((290, 480),):
-        rd.line([(x0, 421), (x1, 421)], fill=L.BRASS + (200,), width=2)
+        rd.line([(x0, L.RAIL_Y + 1), (x1, L.RAIL_Y + 1)], fill=L.BRASS + (200,), width=2)
     bg.alpha_composite(rail)
+    # slotted brass screws in the four corners of the walnut
+    for sx, sy in ((cx + 30, cy + 30), (cx + cw - 30, cy + 30), (cx + 30, cy + ch - 30), (cx + cw - 30, cy + ch - 30)):
+        screw = Image.new('RGBA', (24 * SS, 24 * SS), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(screw)
+        sd.ellipse([1 * SS, 2 * SS, 23 * SS, 24 * SS], fill=(0, 0, 0, 120))
+        for i in range(12):
+            k = i / 11.0
+            col = tuple(int(L.BRASS_DARK[c] + (L.BRASS_LIGHT[c] - L.BRASS_DARK[c]) * (1 - abs(k - 0.3) * 1.3)) for c in range(3))
+            r = 10 * (1 - k * 0.55)
+            sd.ellipse([(12 - r) * SS, (11 - r) * SS, (12 + r) * SS, (11 + r) * SS], fill=col + (255,))
+        a = math.radians(35 if sx < 640 else -25)
+        dx, dy = 8 * math.cos(a) * SS, 8 * math.sin(a) * SS
+        sd.line([(12 * SS - dx, 11 * SS - dy), (12 * SS + dx, 11 * SS + dy)], fill=L.BRASS_DARK + (255,), width=int(2.2 * SS))
+        screw = screw.resize((24, 24), Image.LANCZOS)
+        bg.alpha_composite(screw, (sx - 12, sy - 11))
     return bg
 
 
@@ -388,7 +407,7 @@ def glow_light(col, k):
 
 def draw_dial(img, dial, light):
     """Bezel + illuminated face + printed scale for one dial, into the face image `img`."""
-    ox, oy = dial.window[0] - L.CABINET_INNER[0], dial.window[1] - L.CABINET_INNER[1]
+    ox, oy = dial.window[0] - dial.inner[0], dial.window[1] - dial.inner[1]
     ww, wh = dial.window[2], dial.window[3]
     b = L.BEZEL
     # bezel: dark outer lip, brass frame with highlight, inner shadow
@@ -415,12 +434,13 @@ def draw_dial(img, dial, light):
     draw_scale(face, dial, 0, 0, light)
     # legends
     ink = L.INK + (255,) if light != 'off' else (40, 32, 26, 255)
-    big = 72 if ww < 800 else 92
-    vu_y = wh * (0.53 if ww < 800 else 0.6)
+    k = dial.scale_r / 232.0          # legends grow with the movement (1.0 = the LUFS-size dial)
+    big = int(round(72 * k)) if ww < 800 else 92
+    vu_y = dial.pivot[1] - 0.575 * dial.scale_r if ww < 800 else wh * 0.6
     leg = text_image(dial.legend, big, ink, slant=0.16)
     leg = leg.resize((leg.size[0] * SS, leg.size[1] * SS), Image.LANCZOS)
     face.alpha_composite(leg, (int(ww * SS / 2 - leg.size[0] / 2), int(vu_y * SS - leg.size[1] / 2)))
-    sub = text_image(dial.sub_legend, 24 if ww < 800 else 26, ink, slant=0.16, tracking=0.32)
+    sub = text_image(dial.sub_legend, int(round(24 * k)) if ww < 800 else 26, ink, slant=0.16, tracking=0.32)
     sub = sub.resize((sub.size[0] * SS, sub.size[1] * SS), Image.LANCZOS)
     sy = (vu_y + big * 0.62) * SS
     face.alpha_composite(sub, (int(ww * SS / 2 - sub.size[0] / 2), int(sy - sub.size[1] / 2)))
@@ -458,12 +478,14 @@ def lamp_caption(img, xy, text, side='right'):
     img.alpha_composite(plate, (tx, y + (L.LAMP - plate.size[1]) // 2))
 
 
-def make_face(mode, light, captions=True):
-    cw, ch = L.CABINET_INNER[2], L.CABINET_INNER[3]
+def make_face(mode, light, captions=True, dial=None):
+    """dial: L.stereo_dial (METER, the default) or L.lufs_dial (LUFS source geometry)."""
+    dial = dial or L.stereo_dial
+    cw, ch = dial(0).inner[2], dial(0).inner[3]
     img = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
     if mode == 'stereo':
         for i in range(2):
-            draw_dial(img, L.stereo_dial(i), light)
+            draw_dial(img, dial(i), light)
         if captions:
             lamp_caption(img, L.STEREO_LAMPS[0], 'CLIP')
             lamp_caption(img, L.STEREO_LAMPS[1], 'CLIP', 'left')
@@ -474,36 +496,32 @@ def make_face(mode, light, captions=True):
 
 
 # ---------------------------------------------------------------------------- React lighting
-def windows_for(mode):
-    return [L.stereo_dial(0).window, L.stereo_dial(1).window] if mode == 'stereo' else [L.MONO_WINDOW]
-
-
 GLOW_BLEED = 10    # glow extends under the bezel so the scaled-up strip's soft edge is hidden
 
 
-def glow_frame(mode, f):
+def glow_frame(dial, f):
     """Full-resolution face glow for glow-strip frame f (transparent outside the windows)."""
-    cw, ch = L.CABINET_INNER[2], L.CABINET_INNER[3]
+    ix, iy, cw, ch = dial(0).inner
     col, k = L.glow_frame_colour(f)
     img = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
     b = GLOW_BLEED
-    for (wx, wy, ww, wh) in windows_for(mode):
+    for (wx, wy, ww, wh) in (dial(0).window, dial(1).window):
         fill = face_fill(ww, wh, *glow_light(col, k)).resize((ww + 2 * b, wh + 2 * b), Image.BICUBIC)
         paste(img, fill, rr_mask(ww + 2 * b, wh + 2 * b, (0, 0, ww + 2 * b, wh + 2 * b), 44 + b),
-              (wx - L.CABINET_INNER[0] - b, wy - L.CABINET_INNER[1] - b))
+              (wx - ix - b, wy - iy - b))
     return img
 
 
 def make_glow():
+    """glow_stereo.png (METER, 1/4 size) and glow_lufs.png (LUFS, 1/8 of the LUFS face)."""
     n = L.GLOW_FRAMES
-    gs = L.REACT_GLOW_SCALE
-    cw, ch = L.CABINET_INNER[2], L.CABINET_INNER[3]
-    for mode in ['stereo']:
-        fw, fh = cw // gs, ch // gs
+    for name, dial, (fw, fh) in (
+            ('glow_stereo.png', L.stereo_dial, (L.CABINET_INNER[2] // L.REACT_GLOW_SCALE, L.CABINET_INNER[3] // L.REACT_GLOW_SCALE)),
+            ('glow_lufs.png', L.lufs_dial, L.lufs_glow_frame())):
         strip = Image.new('RGBA', (fw, fh * n), (0, 0, 0, 0))
         for f in range(n):
-            strip.alpha_composite(glow_frame(mode, f).resize((fw, fh), Image.LANCZOS), (0, f * fh))
-        save(strip, 'glow_%s.png' % mode)
+            strip.alpha_composite(glow_frame(dial, f).resize((fw, fh), Image.LANCZOS), (0, f * fh))
+        save(strip, name)
 
 
 # ---------------------------------------------------------------------------- needles
@@ -856,20 +874,20 @@ def lufs_preview(lbg, faces, light_i=0, hue=0.0, out='preview-lufs.png', limiter
     fx, fy, fw, fh = L.LUFS_FACE
     if light in L.GLOW_LIGHTS:
         step = L.HUE_FIRST + int(round(hue * L.HUE_FRAMES)) % L.HUE_FRAMES
-        glow = Image.open(os.path.join(OUT, 'glow_stereo.png'))
+        glow = Image.open(os.path.join(OUT, 'glow_lufs.png'))
         gw, gh = glow.size[0], glow.size[1] // L.GLOW_FRAMES
         page.alpha_composite(glow.crop((0, step * gh, gw, (step + 1) * gh)).resize((fw, fh), Image.BILINEAR), (fx, fy))
         light = 'glow'
     page.alpha_composite(faces[('lufs', light)], (fx, fy))
     for i, vu in enumerate((-1.5, -2.6)):
-        dial = L.stereo_dial(i)
+        dial = L.lufs_dial(i)
         f = round(L.fraction(vu) * (dial.frames - 1))
         per = dial.frames // dial.sectors
         k = min(f // per, dial.sectors - 1)
         r = L.lufs_needle_rect(dial, k)
         strip = Image.open(os.path.join(OUT, L.lufs_needle_file(k)))
         page.alpha_composite(strip.crop((0, (f - k * per + 1) * r[3], r[2], (f - k * per + 2) * r[3])), r[:2])
-        mx, my, mw, mh = L.lufs_max_rect(L.STEREO_WINDOWS[i])
+        mx, my, mw, mh = L.lufs_max_rect(L.LUFS_SRC_WINDOWS[i])
         t = text_image('MAX %+.1f VU' % (vu + 2.1), 14, L.INK + (255,), slant=0.0, semi=True)
         page.alpha_composite(t, (mx + mw - t.size[0], my + (mh - t.size[1]) // 2))
     lamp = Image.open(os.path.join(OUT, 'lamp.png'))
@@ -919,8 +937,8 @@ def cycle_gif(bg, faces):
         beat = (t * 2.0) % 1.0                                   # 120 BPM
         kick = m.exp(-beat * 5.0)
         vus = (-9 + 9 * kick + 1.5 * m.sin(i * 1.3), -10 + 8 * kick + 1.5 * m.sin(i * 1.9 + 1))
-        img = compose(bg, faces, 'stereo', 4, vus, hue=i / float(n), clip=False).crop((0, L.SCREEN_TOP, L.W, L.SCREEN_TOP + 470))
-        frames.append(img.convert('RGB').resize((640, 235), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=192))
+        img = compose(bg, faces, 'stereo', 4, vus, hue=i / float(n), clip=False).crop((0, L.SCREEN_TOP, L.W, L.SCREEN_TOP + L.H))
+        frames.append(img.convert('RGB').resize((640, L.H // 2), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=192))
     frames[0].save(os.path.join(L.PREVIEW_DIR, 'cycle.gif'), save_all=True, append_images=frames[1:], duration=67, loop=0,
                    optimize=True)
 
@@ -944,8 +962,8 @@ def react_gif(bg, faces):
         target = heat_for(max(vus))
         tau = 0.12 if target > heat else 0.9
         heat += (target - heat) * (1 - m.exp(-dt / tau))
-        img = compose(bg, faces, 'stereo', 3, vus, heat=heat, clip=max(vus) > 2.5).crop((0, L.SCREEN_TOP, L.W, L.SCREEN_TOP + 470))
-        frames.append(img.convert('RGB').resize((640, 235), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=192))
+        img = compose(bg, faces, 'stereo', 3, vus, heat=heat, clip=max(vus) > 2.5).crop((0, L.SCREEN_TOP, L.W, L.SCREEN_TOP + L.H))
+        frames.append(img.convert('RGB').resize((640, L.H // 2), Image.LANCZOS).convert('P', palette=Image.ADAPTIVE, colors=192))
     frames[0].save(os.path.join(L.PREVIEW_DIR, 'react.gif'), save_all=True, append_images=frames[1:], duration=67, loop=0,
                    optimize=True)
 
@@ -961,9 +979,9 @@ def main():
             print('face', mode, light)
             faces[(mode, light)] = make_face(mode, light)
             save(faces[(mode, light)], 'face_%s_%s.png' % (mode, light))
-            faces[('lufs', light)] = make_face(mode, light, captions=False).resize(L.LUFS_FACE[2:], Image.LANCZOS)
+            faces[('lufs', light)] = make_face(mode, light, captions=False, dial=L.lufs_dial).resize(L.LUFS_FACE[2:], Image.LANCZOS)
             save(faces[('lufs', light)], 'face_lufs_%s.png' % light)
-    print('needles'); make_needles('s', L.stereo_dial(0)); make_lufs_needles(L.stereo_dial(0))
+    print('needles'); make_needles('s', L.stereo_dial(0)); make_lufs_needles(L.lufs_dial(0))
     print('controls'); make_controls()
     print('glow strips'); make_glow()
     preview(bg, faces, 'stereo', 0, (0.0, -3.0), out='preview-stereo.png')

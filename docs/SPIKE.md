@@ -61,6 +61,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 23 | Save with AUTO/LIMITER/TARGET/CEILING/HOLD set, restart, reload | Settings restored (LIMITER latency reported again); readings start empty (--.-) |
 | 24 | **Data wheel.** On each tab touch a control (a button, a choice row, the TARGET/CEILING arrows, the TRIM knob), then turn the data wheel; press it | An amber ring marks the focused control; the wheel steps choices and moves TRIM/TARGET/CEILING; pressing opens the large editor; touching still toggles buttons normally. Note if the ring or the wheel does nothing (the focus wrapper is untested on hardware) |
 | 25 | METER tab: turn Q-Link 15. SETUP: PEAK HOLD button and Q-Link 10; CALIBRATION −10 and −4 | TRIM moves (watch the needles). PEAK HOLD works as before. A −10 dBFS sine reads 0 VU at −10; the plate shows the choice. A project saved before this update still loads its old CALIBRATION |
+| 26 | **Bigger METER.** Open METER with WARM, then REACT and CYCLE; note the memory % before and after opening the plugin | The cabinet fills the page (sunburst in the top rail, brass screws in the corners); the needles stay aligned with the larger scale and pivot; React/Cycle glow fills the faces without a soft edge inside the bezel. Memory stays reasonable (images up to about 131 MiB, against about 119 MiB before) |
 
 ## If something fails
 

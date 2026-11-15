@@ -216,21 +216,21 @@ def main():
                           'colour': L.argb(colour), 'justification': just + ' verticallyCentred', 'case': 'Original'},
             'type': 'Value', 'handleName': P(param)}, r, show='Hide')
 
-    # LUFS tab: the METER dials at LUFS_SCALE. Faces and needle strips are rendered at that size
-    # (the MPC never shrinks an image); only the soft 1/4-res glow strip is scaled up.
+    # LUFS tab: the lufs_dial geometry (the v0.2 METER dials) at LUFS_SCALE. Faces and needle strips
+    # are rendered at that size (the MPC never shrinks an image); only the soft 1/8-res glow strip is scaled up.
     lufs = []
     for li, light in enumerate(L.STATIC_LIGHTS):
         lufs.append(image('lufs face %s' % light, 'face_lufs_%s.png' % light, L.LUFS_FACE, only=when('View', li, L.NUM_VIEWS)))
-    lufs.append(filmstrip('lufs glow', 'glow_stereo.png', L.GLOW_FRAMES, P('Glow'), L.LUFS_FACE, only=cond))
+    lufs.append(filmstrip('lufs glow', 'glow_lufs.png', L.GLOW_FRAMES, P('Glow'), L.LUFS_FACE, only=cond))
     lufs.append(image('lufs face glow', 'face_lufs_glow.png', L.LUFS_FACE, only=cond))
-    for key, dial in (('L', L.stereo_dial(0)), ('R', L.stereo_dial(1))):
+    for key, dial in (('L', L.lufs_dial(0)), ('R', L.lufs_dial(1))):
         first, sectors, per = spec[key]
         wx, wy = dial.window[0], dial.window[1]
         for k in range(sectors):
             x, y, w, h = L.sector_box(dial, k)
             lufs.append(filmstrip('lufs %s needle %d' % (key, k + 1), L.lufs_needle_file(k), per + 1,
                                   'Parameter %d' % (first + k), L.lufs_needle_rect(dial, k)))
-    for name, param, window in (('lufs max L', 'L Max', L.STEREO_WINDOWS[0]), ('lufs max R', 'R Max', L.STEREO_WINDOWS[1])):
+    for name, param, window in (('lufs max L', 'L Max', L.LUFS_SRC_WINDOWS[0]), ('lufs max R', 'R Max', L.LUFS_SRC_WINDOWS[1])):
         lufs.append(label(name, param, L.lufs_max_rect(window), L.label_px(14), L.INK, 'right'))
     for i, name in enumerate(('L Clip', 'R Clip')):
         x, y = L.LUFS_LAMPS[i]
