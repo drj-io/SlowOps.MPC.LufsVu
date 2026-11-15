@@ -1,8 +1,17 @@
-// Slow Ops VU Meter: thin mpc::Plugin adapter around slowops::vumeter::VuEngine.
+// Slow Ops VU Meter: thin mpc::Plugin adapter around the slowops::vumeter core.
 //
-// Audio: in -> output trim (smoothed; bit-exact copy at 0.0 dB or Bypass) -> out.
-// Meters: L and R needles on the output signal (stereo only; the v0.1 MONO view was retired in
-// v0.2 -- its parameter slots stay so saved projects and indices remain valid, but are unused).
+// Audio (every stage is optional; with AUTO off, TRIM 0.0 dB and LIMITER off the output is a
+// bit-exact copy of the input with zero latency):
+//
+//   in --+--> input loudness (AUTO's estimator; never the output, so no feedback loop)
+//        |
+//        +--> gain = AUTO + TRIM (one smoothed gain for L and R; unity on Bypass)
+//               --> LIMITER (true-peak look-ahead; adds latency only while on)
+//                     --> out --> VU needles, clip lamps, phase, LUFS M/S/I, true-peak max
+//
+// All metering reads the output (post-processing), so the METER and LUFS tabs agree.
+// Stereo only (the v0.1 MONO view was retired in v0.2; its parameter slots stay so saved
+// projects and indices remain valid).
 //
 // Display: each needle is drawn by several "sector" filmstrips, each covering a slice of the
 // sweep (a small transparent sprite instead of one face-sized sprite, which keeps decoded
@@ -13,7 +22,11 @@
 #include "../../core/include/slowops/vumeter/VuEngine.hpp"
 #include "../../core/include/slowops/vumeter/Heat.hpp"
 #include "../../core/include/slowops/vumeter/HueCycle.hpp"
-#include "../../core/include/slowops/vumeter/AutoTrim.hpp"
+#include "../../core/include/slowops/vumeter/AutoLoudness.hpp"
+#include "../../core/include/slowops/vumeter/LoudnessMeter.hpp"
+#include "../../core/include/slowops/vumeter/TruePeak.hpp"
+#include "../../core/include/slowops/vumeter/TruePeakLimiter.hpp"
+#include "../../core/include/slowops/vumeter/Trim.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -39,7 +52,6 @@ constexpr int kHueFirst = kHeatFrames * kPalettes;
 constexpr int kFlashFrame = kHueFirst + kHueFrames;
 constexpr int kGlowFrames = kFlashFrame + 1;
 
-constexpr double kAutoTrimSeconds = 3.0;
 constexpr int kCorrSteps = 21;                // correlation -1..+1 in 21 steps (frame 0 = no signal)
 constexpr float kMaxFloorVU = -40.0f;        // "cleared" max reading
 
@@ -53,6 +65,16 @@ constexpr int kLightReact = 3;
 constexpr int kLightCycle = 4;
 constexpr double kClipThrDbfs[] = { 0.0, -0.3, -1.0, -3.0 };
 constexpr double kCycleBarValues[] = { 1.0, 2.0, 4.0, 8.0 };
+
+// LUFS tab
+constexpr float kTargetMin = -23.0f, kTargetMax = -9.0f, kTargetDef = -14.0f, kTargetStep = 0.5f;
+constexpr float kCeilMin = -6.0f, kCeilMax = -0.1f, kCeilDef = -1.0f, kCeilStep = 0.1f;
+constexpr float kNoReading = -99.0f;          // readout floor: shown as "--.-"
+constexpr double kClipRiskHoldS = 3.0;
+constexpr double kLimitedGrDb = 1.0;          // AUTO says LIMITED above this average gain reduction
+const char* const kAutoStateNames[] = { "AUTO OFF", "AUTO LEARNING", "AUTO ADJUSTING", "AUTO IN RANGE",
+                                        "AUTO HOLD (SILENCE)", "AUTO GAIN LIMIT", "AUTO LIMITED", "CLIP RISK" };
+constexpr int kClipRiskState = 7;
 
 } // namespace
 
@@ -81,8 +103,8 @@ public:
         kNeedleM0 = kNeedleR0 + kStereoSectors,      // retired mono sectors
         kGlow = kNeedleM0 + kMonoSectors,            // React/Cycle glow frame 0..kGlowFrames-1
         // ---- v0.2 (appended) ----
-        kAutoTrim,       // one-shot trigger: listen 3 s, then set Trim so the program averages 0 VU
-        kAutoBusy,       // display: AUTO is listening
+        kAutoTrim,       // retired in v0.3 (was the one-shot 0 VU "AUTO" trim)
+        kAutoBusy,       // retired in v0.3
         kCorr,           // display: phase correlation frame (0 = no signal, 1..21 = -1..+1)
         kMaxL,           // display: highest VU since the last reset (lamp tap)
         kMaxR,
@@ -90,6 +112,25 @@ public:
         kClipThr,        // CLIP threshold 0 / -0.3 / -1 / -3 dBFS
         kCycleBars,      // Cycle light: 1 / 2 / 4 / 8 bars per trip round the hue wheel
         kPalette,        // React light colours: Thermal / Neon / Amber
+        // ---- v0.3 (appended): LUFS tab ----
+        kLufsAuto,       // Off / On: steer integrated loudness towards Target
+        kTarget,         // -23..-9 LUFS in 0.5 steps
+        kLimiter,        // Off / On: true-peak limiter (adds latency only while on)
+        kCeiling,        // -6.0..-0.1 dBTP in 0.1 steps
+        kMeasure,        // Run / Hold: Hold freezes Integrated, True Peak Max and elapsed time
+        kLufsClear,      // one-shot triggers (buttons)
+        kTargetDown,
+        kTargetUp,
+        kCeilDown,
+        kCeilUp,
+        kIntegrated,     // ---- read-only displays ----
+        kShortTerm,
+        kMomentary,
+        kTpMax,
+        kGainRed,        // limiter gain reduction, dB >= 0
+        kAutoState,
+        kAutoGain,
+        kElapsed,        // seconds since CLEAR while running
         kNumParams
     };
 
@@ -118,10 +159,8 @@ public:
         addSectors("needleR", "R Needle", kStereoSectors, kStereoPer);
         addSectors("needleM", "M Needle", kMonoSectors, kMonoPer);
         addDisplay(mpc::intParam("glow", "Glow", 0, kGlowFrames - 1, 0));
-        mpc::Param autoTrim = mpc::boolParam("autotrim", "Auto Trim", false);
-        autoTrim.automatable = false;
-        addParam(autoTrim);
-        addDisplay(mpc::boolParam("autobusy", "Auto Busy", false));
+        addDisplay(mpc::boolParam("autotrim", "Unused 2", false));     // retired slot
+        addDisplay(mpc::boolParam("autobusy", "Unused 3", false));     // retired slot
         addDisplay(mpc::intParam("corr", "Correlation", 0, kCorrSteps, 0));
         addDisplay(mpc::floatParam("maxL", "L Max", kMaxFloorVU, 10.0f, kMaxFloorVU, "", 1));
         addDisplay(mpc::floatParam("maxR", "R Max", kMaxFloorVU, 10.0f, kMaxFloorVU, "", 1));
@@ -129,6 +168,24 @@ public:
         addParam(mpc::choiceParam("clipthr", "Clip Level", { "0 dBFS", "-0.3 dBFS", "-1 dBFS", "-3 dBFS" }, 0));
         addParam(mpc::choiceParam("cyclebars", "Cycle Rate", { "1 Bar", "2 Bars", "4 Bars", "8 Bars" }, 1));
         addParam(mpc::choiceParam("palette", "Palette", { "Thermal", "Neon", "Amber" }, 0));
+        addParam(mpc::choiceParam("lufsauto", "LUFS Auto", { "Off", "On" }, 0));
+        addParam(mpc::floatParam("target", "Target", kTargetMin, kTargetMax, kTargetDef, "", 1));
+        addParam(mpc::choiceParam("limiter", "Limiter", { "Off", "On" }, 0));
+        addParam(mpc::floatParam("ceiling", "Ceiling", kCeilMin, kCeilMax, kCeilDef, "", 1));
+        addParam(mpc::choiceParam("measure", "Measure", { "Run", "Hold" }, 0));
+        addTrigger("lufsclear", "Clear");
+        addTrigger("targetdn", "Target Down");
+        addTrigger("targetup", "Target Up");
+        addTrigger("ceildn", "Ceiling Down");
+        addTrigger("ceilup", "Ceiling Up");
+        addDisplay(mpc::floatParam("integrated", "Integrated", kNoReading, 10.0f, kNoReading, "", 1));
+        addDisplay(mpc::floatParam("shortterm", "Short-term", kNoReading, 10.0f, kNoReading, "", 1));
+        addDisplay(mpc::floatParam("momentary", "Momentary", kNoReading, 10.0f, kNoReading, "", 1));
+        addDisplay(mpc::floatParam("tpmax", "True Peak Max", kNoReading, 20.0f, kNoReading, "", 1));
+        addDisplay(mpc::floatParam("gr", "Gain Reduction", 0.0f, 40.0f, 0.0f, "", 1));
+        addDisplay(mpc::intParam("autostate", "Auto State", 0, 7, 0));
+        addDisplay(mpc::floatParam("autogain", "Auto Gain", -12.0f, 12.0f, 0.0f, "", 1));
+        addDisplay(mpc::floatParam("elapsed", "Elapsed", 0.0f, 359999.0f, 0.0f, "", 0));
         if (numParams() != kNumParams) mpc::log("SlowOpsVUMeter: parameter count mismatch");
     }
 
@@ -138,24 +195,35 @@ public:
         info.name = "VU Meter";
         info.vendor = "Slow Ops";
         info.uniqueId = MPC_FOURCC('S', 'o', 'V', 'M');
-        info.version = 200;            // 0.2.0
+        info.version = 300;            // 0.3.0
         info.isInstrument = false;
         info.numInputs = 2;
         info.numOutputs = 2;
         info.tailSamples = 1;          // no audio tail
+        info.latencySamples = 0;       // LIMITER off by default (see updateLatency)
         return info;
     }
 
     void prepare(double sampleRate, int) override
     {
         engine_.prepare(sampleRate);
+        engine_.setTrimDb(0.0f, true);      // the VU engine only meters; gain is applied below
+        gain_.prepare(sampleRate);
+        gain_.snap();
+        limiter_.prepare(sampleRate);
+        auto_.prepare(sampleRate);
+        outMeter_.prepare(sampleRate);
+        tpL_.prepare(sampleRate);
+        tpR_.prepare(sampleRate);
         heat_.setTimes(0.12, 0.9);     // warms in ~120 ms, cools in ~0.9 s: a glowing filament
         displayEvery_ = (int)(sampleRate / 30.0);
         if (displayEvery_ < 1) displayEvery_ = 1;
+        updateLatency(getBool(kLimiter));
     }
 
-    // Runs on resume and after every state load: the meter movements and clip latches restart
-    // from rest, and a trigger saved in the "on" position is cleared without firing.
+    // Runs on resume and after every state load: the meter movements, clip latches and
+    // loudness statistics restart from rest, and a trigger saved in the "on" position is
+    // cleared without firing. Measurements are never restored from a project, only settings.
     // Needle/clip displays are deliberately not written here: any stale value from a saved
     // project is replaced by the live reading on the first UI tick (<= 33 ms), and a view that
     // becomes visible is published immediately, so saved needle/clip values never act as state.
@@ -163,15 +231,30 @@ public:
     {
         applyControls();
         engine_.reset();
+        gain_.snap();
+        limiter_.reset();
+        auto_.reset();
+        outMeter_.reset();
+        tpL_.reset(); tpR_.reset();
+        tpMax_ = 0.0;
+        grAvg_ = 0.0;
+        clipRiskLeft_ = 0;
         heat_.reset();
         hue_.reset();
-        autoTrim_.cancel();
         flashLeft_ = 0;
         lastHits_ = engine_.clipHits();
         displayAge_ = 0;
-        if (getNormalised(kResetClip) >= 0.5f) setValue(kResetClip, 0.0f);
-        if (getNormalised(kAutoTrim) >= 0.5f) setValue(kAutoTrim, 0.0f);
+        tick_ = 0;
+        for (int t : { (int)kResetClip, (int)kAutoTrim, (int)kLufsClear, (int)kTargetDown, (int)kTargetUp, (int)kCeilDown, (int)kCeilUp })
+            if (getNormalised(t) >= 0.5f) setValue(t, 0.0f);
         publishView();
+    }
+
+    // LIMITER on/off changes the plugin's latency. Called from the host's thread (parameter
+    // change, state load, prepare), never from process().
+    void parameterChanged(int index, float plain) override
+    {
+        if (index == kLimiter) updateLatency(plain >= 0.5f);
     }
 
     void process(mpc::ProcessContext& ctx) override
@@ -180,24 +263,50 @@ public:
         float* outL = ctx.numOutputs > 0 ? ctx.outputs[0] : nullptr;
         float* outR = ctx.numOutputs > 1 ? ctx.outputs[1] : nullptr;
         const float* inL = ctx.numInputs > 0 ? ctx.inputs[0] : nullptr;
-        const float* inR = ctx.numInputs > 1 && ctx.inputs[1] != nullptr ? ctx.inputs[1] : inL;
+        const bool monoIn = !(ctx.numInputs > 1 && ctx.inputs[1] != nullptr);
+        const float* inR = monoIn ? inL : ctx.inputs[1];
         if (inL == nullptr || n <= 0) return;   // nothing to meter; outputs were cleared by the SDK
 
-        if (getNormalised(kResetClip) >= 0.5f)
-        {
-            setValue(kResetClip, 0.0f);
-            engine_.resetClips();
-            engine_.clearMax();
-        }
-        if (getNormalised(kAutoTrim) >= 0.5f)       // tap AUTO: start listening (tap again: cancel)
-        {
-            setValue(kAutoTrim, 0.0f);
-            if (autoTrim_.active()) autoTrim_.cancel();
-            else autoTrim_.start(kAutoTrimSeconds, sampleRate());
-        }
+        handleTriggers();
         applyControls();
+        auto_.setMonoInput(monoIn);
+        outMeter_.setMonoInput(monoIn);
         publishView();
-        engine_.process(inL, inR, outL, outR, n);
+
+        const bool limiterOn = getBool(kLimiter);
+        const bool running = getInt(kMeasure) == 0;
+        float bl[kChunk], br[kChunk];
+        for (int done = 0; done < n; )
+        {
+            const int m = n - done < kChunk ? n - done : kChunk;
+            for (int i = 0; i < m; ++i)
+            {
+                const float xl = inL[done + i], xr = inR[done + i];   // read input before any output write
+                auto_.feed(std::isfinite(xl) ? xl : 0.0f, std::isfinite(xr) ? xr : 0.0f);
+                const float g = gain_.next();
+                float yl = xl * g, yr = xr * g;                       // x * 1.0f == x: bit-exact at unity
+                limiter_.process(yl, yr);
+                bl[i] = yl; br[i] = yr;
+            }
+            for (int i = 0; i < m; ++i)
+            {
+                if (outL != nullptr) outL[done + i] = bl[i];
+                if (outR != nullptr) outR[done + i] = br[i];
+                outMeter_.process(bl[i], br[i]);
+                const double pk = std::fmax(tpL_.process(bl[i]), monoIn ? 0.0 : tpR_.process(br[i]));
+                if (running && pk > tpMax_) tpMax_ = pk;
+                if (!limiterOn && pk > 1.0) clipRiskLeft_ = (int64_t)(kClipRiskHoldS * sampleRate());
+            }
+            engine_.process(bl, br, bl, br, m);                       // VU needles, clips, phase (meter only)
+            done += m;
+        }
+        if (clipRiskLeft_ > 0) clipRiskLeft_ -= n;
+
+        // AUTO: limiter pressure, then move the gain (applied from the next block on)
+        grAvg_ += (limiter_.gainReductionDb() - grAvg_) * std::fmin(1.0, (double)n / (3.0 * sampleRate()));
+        auto_.setLimited(limiterOn && grAvg_ > kLimitedGrDb);
+        auto_.advance(n);
+        updateGainTarget();
 
         tempo_.tempoValid = ctx.transport.valid && ctx.transport.tempoValid;
         tempo_.bpm = ctx.transport.bpm;
@@ -207,23 +316,7 @@ public:
         tempo_.timeSigDenominator = ctx.transport.timeSigDenominator;
         hue_.advance(tempo_, n, sampleRate());
 
-        if (autoTrim_.active())
-        {
-            autoTrim_.feed(visibleDeflection(), n);
-            double correction = 0.0;
-            if (autoTrim_.takeResult(correction) && autoTrim_.heardSignal())
-            {
-                // Meters read the trimmed output, so the correction adds to the current trim
-                // (with Bypass on the meters read the raw input: start from 0 dB).
-                const float base = getBool(kBypass) ? 0.0f : snapTrim(get(kTrim));
-                float trim = snapTrim(base + (float)correction);
-                trim = trim < -12.0f ? -12.0f : (trim > 12.0f ? 12.0f : trim);
-                setValue(kTrim, param(kTrim).toNormalised(trim));
-                applyControls();
-            }
-        }
-
-        // Clip flash (React/Cycle): any new clipped sample lights the cabinet white for one beat.
+        // Clip flash (React/Cycle): any new clipped sample lights the dials white for one beat.
         const uint64_t hits = engine_.clipHits();
         if (hits != lastHits_)
         {
@@ -284,6 +377,47 @@ public:
             char buf[32]; std::snprintf(buf, sizeof(buf), "%+.1f VU", deflectionToVU(y));
             out = buf; return true;
         }
+        if (index == kTarget || index == kCeiling)
+        {
+            char buf[32];
+            if (index == kTarget) std::snprintf(buf, sizeof(buf), "%.1f LUFS", (double)snapTarget(plain));
+            else                  std::snprintf(buf, sizeof(buf), "%.1f dBTP", (double)snapCeiling(plain));
+            out = buf; return true;
+        }
+        if (index == kIntegrated || index == kShortTerm || index == kMomentary || index == kTpMax)
+        {
+            char buf[32];
+            if (plain <= kNoReading + 0.05f) std::snprintf(buf, sizeof(buf), "--.-");
+            else                             std::snprintf(buf, sizeof(buf), "%.1f", (double)plain);
+            if (index == kMomentary) { out = std::string("M ") + buf; return true; }
+            out = buf; return true;
+        }
+        if (index == kGainRed)
+        {
+            char buf[32]; std::snprintf(buf, sizeof(buf), "%.1f", (double)std::fabs(plain));
+            out = buf; return true;
+        }
+        if (index == kAutoState)
+        {
+            const int s = (int)std::lround(plain);
+            out = kAutoStateNames[s < 0 ? 0 : (s > kClipRiskState ? kClipRiskState : s)];
+            return true;
+        }
+        if (index == kAutoGain)
+        {
+            char buf[32];
+            if (std::fabs(plain) < 0.05f) std::snprintf(buf, sizeof(buf), "0.0 dB");
+            else                          std::snprintf(buf, sizeof(buf), "%+.1f dB", (double)plain);
+            out = buf; return true;
+        }
+        if (index == kElapsed)
+        {
+            const long t = std::lround(plain < 0.0f ? 0.0f : plain);
+            char buf[32];
+            if (t >= 3600) std::snprintf(buf, sizeof(buf), "%ld:%02ld:%02ld", t / 3600, (t / 60) % 60, t % 60);
+            else           std::snprintf(buf, sizeof(buf), "%02ld:%02ld", t / 60, t % 60);
+            out = buf; return true;
+        }
         if (index == kTrim)
         {
             const float db = snapTrim(plain);
@@ -296,7 +430,15 @@ public:
     }
 
 private:
+    static constexpr int kChunk = 256;
+
     void addDisplay(mpc::Param p) { p.automatable = false; addParam(p); }
+    void addTrigger(const char* id, const char* name)
+    {
+        mpc::Param p = mpc::boolParam(id, name, false);
+        p.automatable = false;
+        addParam(p);
+    }
 
     void addSectors(const char* id, const char* name, int sectors, int per)
     {
@@ -317,17 +459,64 @@ private:
     }
 
     static float snapTrim(float db) { return std::round(db * 10.0f) / 10.0f; }
+    static float snapTarget(float v) { const float s = std::round(v / kTargetStep) * kTargetStep; return s < kTargetMin ? kTargetMin : (s > kTargetMax ? kTargetMax : s); }
+    static float snapCeiling(float v) { const float s = std::round(v * 10.0f) / 10.0f; return s < kCeilMin ? kCeilMin : (s > kCeilMax ? kCeilMax : s); }
+
+    bool takeTrigger(int i)
+    {
+        if (getNormalised(i) < 0.5f) return false;
+        setValue(i, 0.0f);
+        return true;
+    }
+
+    void handleTriggers()
+    {
+        if (takeTrigger(kResetClip)) { engine_.resetClips(); engine_.clearMax(); }
+        takeTrigger(kAutoTrim);                                   // retired: ignored
+        if (takeTrigger(kLufsClear))
+        {
+            outMeter_.clear();
+            auto_.clear();
+            tpMax_ = 0.0;
+            clipRiskLeft_ = 0;
+        }
+        if (takeTrigger(kTargetDown)) setValue(kTarget, param(kTarget).toNormalised(snapTarget(snapTarget(get(kTarget)) - kTargetStep)));
+        if (takeTrigger(kTargetUp))   setValue(kTarget, param(kTarget).toNormalised(snapTarget(snapTarget(get(kTarget)) + kTargetStep)));
+        if (takeTrigger(kCeilDown))   setValue(kCeiling, param(kCeiling).toNormalised(snapCeiling(snapCeiling(get(kCeiling)) - kCeilStep)));
+        if (takeTrigger(kCeilUp))     setValue(kCeiling, param(kCeiling).toNormalised(snapCeiling(snapCeiling(get(kCeiling)) + kCeilStep)));
+    }
 
     void applyControls()
     {
         engine_.setReferenceDbfs(kRefDbfs[getInt(kRef)]);
         engine_.setPeakHold(getInt(kPeak) == 1);
-        engine_.setTrimDb(snapTrim(get(kTrim)), getBool(kBypass));
         engine_.setClipThresholdDbfs(kClipThrDbfs[getInt(kClipThr)]);
         hue_.setBars(kCycleBarValues[getInt(kCycleBars)]);
+        const bool bypass = getBool(kBypass);
+        limiter_.setCeilingDb(snapCeiling(get(kCeiling)));
+        limiter_.setEnabled(getBool(kLimiter));
+        limiter_.setBypass(bypass);
+        auto_.setEnabled(getBool(kLufsAuto));
+        auto_.setTargetLufs(snapTarget(get(kTarget)));
+        outMeter_.setRunning(getInt(kMeasure) == 0);
+        updateGainTarget();
     }
 
-    // The louder of the two needles (drives React heat and AUTO trim).
+    // One gain for L and R: AUTO + TRIM, or exactly unity on Bypass (then bit-exact).
+    void updateGainTarget()
+    {
+        if (getBool(kBypass)) { gain_.setTargetGain(1.0f); return; }
+        const double db = auto_.gainDb() + (double)snapTrim(get(kTrim));
+        gain_.setTargetGain(db == 0.0 ? 1.0f : (float)std::pow(10.0, db / 20.0));
+    }
+
+    void updateLatency(bool limiterOn)
+    {
+        const int lat = limiterOn ? limiter_.latencySamples() : 0;
+        if (lat != info().latencySamples) setLatency(lat);
+    }
+
+    // The louder of the two needles (drives React heat).
     double visibleDeflection() const { return std::fmax(engine_.deflection(kLeft), engine_.deflection(kRight)); }
 
     void publishMax(int index, int meter)
@@ -362,7 +551,8 @@ private:
         if (glow >= 0 && flashLeft_ > 0) glow = kFlashFrame;
         if (glow >= 0) setValue(kGlow, (float)glow / (float)(kGlowFrames - 1));
 
-        setValue(kAutoBusy, autoTrim_.active() ? 1.0f : 0.0f);
+        setValue(kGainRed, param(kGainRed).toNormalised(round1(limiter_.takePeakGainReductionDb())));
+        if (tick_++ % 3 == 0) publishLoudness();     // numeric readouts at 10 Hz
         const Correlation& c = engine_.correlation();
         const int corr = c.hasSignal() ? 1 + (int)std::lround((c.value() + 1.0) * 0.5 * (kCorrSteps - 1)) : 0;
         setValue(kCorr, (float)corr / (float)kCorrSteps);
@@ -377,11 +567,43 @@ private:
         publishMax(kMaxR, kRight);
     }
 
+    static float round1(double v) { return std::isfinite(v) ? std::round((float)v * 10.0f) / 10.0f : kNoReading; }
+
+    void publishReading(int index, double lufs)
+    {
+        float v = std::isfinite(lufs) ? round1(lufs) : kNoReading;
+        const mpc::Param& p = param(index);
+        if (v < p.min) v = p.min;
+        if (v > p.max) v = p.max;
+        setValue(index, p.toNormalised(v));
+    }
+
+    void publishLoudness()
+    {
+        publishReading(kIntegrated, outMeter_.integrated());
+        publishReading(kShortTerm, outMeter_.shortTerm());
+        publishReading(kMomentary, outMeter_.momentary());
+        publishReading(kTpMax, tpMax_ > 0.0 ? 20.0 * std::log10(tpMax_) : LoudnessMeter::noValue());
+        const int state = clipRiskLeft_ > 0 ? kClipRiskState : (int)auto_.state();
+        setValue(kAutoState, (float)state / (float)kClipRiskState);
+        float ag = round1(auto_.gainDb());
+        setValue(kAutoGain, param(kAutoGain).toNormalised(ag));
+        setValue(kElapsed, param(kElapsed).toNormalised(std::floor((float)outMeter_.elapsedSeconds())));
+    }
+
     VuEngine engine_;
     HeatFollower heat_;
     HueCycle hue_;
     TempoInfo tempo_;
-    AutoTrim autoTrim_;
+    Trim gain_;                    // AUTO + TRIM, smoothed over 20 ms
+    TruePeakLimiter limiter_;
+    AutoLoudness auto_;
+    LoudnessMeter outMeter_;
+    TruePeakDetector tpL_, tpR_;
+    double tpMax_ = 0.0;           // linear, since CLEAR (frozen while HOLD)
+    double grAvg_ = 0.0;
+    int64_t clipRiskLeft_ = 0;
+    unsigned tick_ = 0;
     uint64_t lastHits_ = 0;
     int64_t flashLeft_ = 0;
     int displayAge_ = 0;

@@ -24,7 +24,9 @@ static int g_fail = 0, g_pass = 0;
 enum P { kReserved = 0, kMode, kRef, kPeak, kLight, kBypass, kTrim, kResetClip,
          kView, kClipL, kClipR, kClipIn, kNeedleL0, kNeedleR0 = kNeedleL0 + 4, kNeedleM0 = kNeedleR0 + 4,
          kGlow = kNeedleM0 + 8,
-         kAutoTrim, kAutoBusy, kCorr, kMaxL, kMaxR, kMaxM, kClipThr, kCycleBars, kPalette, kNumParams };
+         kAutoTrim, kAutoBusy, kCorr, kMaxL, kMaxR, kMaxM, kClipThr, kCycleBars, kPalette,
+         kLufsAuto, kTarget, kLimiter, kCeiling, kMeasure, kLufsClear, kTargetDown, kTargetUp, kCeilDown, kCeilUp,
+         kIntegrated, kShortTerm, kMomentary, kTpMax, kGainRed, kAutoState, kAutoGain, kElapsed, kNumParams };
 // Glow frames: 3 palettes x 16 heat steps, then 120 hue steps, then the flash frame.
 static constexpr int kHues = 120, kHueFirst = 48, kFlash = kHueFirst + kHues, kGlowMax = kFlash;
 static float light(int i) { return (float)i / 4.0f; }   // Warm, Cool, Off, React, Cycle
@@ -36,7 +38,7 @@ static const NeedleLayout kLayout[3] = { { kNeedleL0, 4, 32, 128 }, { kNeedleR0,
 static constexpr double kPi = 3.14159265358979323846;
 
 // ---- host side ----------------------------------------------------------------------
-struct Automate { int count[kNumParams] = {}; float value[kNumParams] = {}; };
+struct Automate { int count[kNumParams] = {}; float value[kNumParams] = {}; int ioChanged = 0; };
 static std::map<AEffect*, Automate> g_auto;
 static VstTimeInfo g_time{};
 static VstIntPtr hostCallback(AEffect* e, VstInt32 opcode, VstInt32 index, VstIntPtr, void* ptr, float opt)
@@ -46,6 +48,7 @@ static VstIntPtr hostCallback(AEffect* e, VstInt32 opcode, VstInt32 index, VstIn
         case audioMasterAutomate:
             if (index >= 0 && index < kNumParams) { ++g_auto[e].count[index]; g_auto[e].value[index] = opt; }
             return 0;
+        case audioMasterIOChanged: ++g_auto[e].ioChanged; return 1;
         case audioMasterVersion: return 2400;
         case audioMasterGetTime: return (VstIntPtr)&g_time;
         case audioMasterGetVendorString: if (ptr) std::strcpy((char*)ptr, "MPC 3"); return 1;
@@ -73,6 +76,7 @@ struct Plug
     bool bitExact = true;          // output == input for every processed sample so far
     double maxGainErr = 0.0;       // vs an expected gain, when `expectGain` > 0
     float expectGain = 0.0f;
+    double outPeak = 0.0;          // largest |output| sample so far
 
     VstIntPtr disp(VstInt32 op, VstInt32 idx = 0, VstIntPtr v = 0, void* p = nullptr, float o = 0.0f) { return e->dispatcher(e, op, idx, v, p, o); }
 
@@ -129,6 +133,7 @@ struct Plug
         const float* oR = inPlace ? r.data() : orr.data();
         for (int i = 0; i < n; ++i)
         {
+            outPeak = std::max(outPeak, (double)std::max(std::fabs(oL[i]), std::fabs(oR[i])));
             if (std::memcmp(&oL[i], &il[(size_t)i], 4) != 0 || std::memcmp(&oR[i], &ir[(size_t)i], 4) != 0) bitExact = false;
             if (expectGain > 0.0f && il[(size_t)i] != 0.0f)
                 maxGainErr = std::max(maxGainErr, std::fabs((double)oL[i] / il[(size_t)i] - expectGain));
@@ -250,7 +255,7 @@ static void displayBudget()
         p.runFor(3.0, { 128 });
         int needles = 0, hidden = 0, total = 0;
         for (int i = 0; i < kNumParams; ++i) total += p.automate().count[i] - before.count[i];
-        for (int i = kNeedleL0; i < kNumParams; ++i)
+        for (int i = kNeedleL0; i < kGlow; ++i)
         {
             const int d = p.automate().count[i] - before.count[i];
             const bool visible = mode == 0 ? i < kNeedleM0 : i >= kNeedleM0;
@@ -268,8 +273,9 @@ static void displayBudget()
     Automate before = p.automate();
     p.runFor(2.0);
     int total = 0;
-    for (int i = 0; i < kNumParams; ++i) total += p.automate().count[i] - before.count[i];
-    CHECK(total == 0, "silence at rest: no redundant writes (%d)", total);
+    for (int i = 0; i < kNumParams; ++i) if (i != kElapsed) total += p.automate().count[i] - before.count[i];
+    CHECK(total == 0, "silence at rest: no redundant writes (%d; the elapsed clock ticks once a second)", total);
+    CHECK(p.automate().count[kElapsed] - before.count[kElapsed] <= 3, "elapsed clock: at most one write a second");
 }
 
 static void clips()
@@ -380,41 +386,12 @@ static void v02()
     auto norm = [](int i, int n) { return (float)i / (float)(n - 1); };
     auto glow = [](Plug& p) { return (int)std::lround(p.get(kGlow) * kGlowMax); };
 
-    std::printf("AUTO TRIM\n");
+    std::printf("Retired AUTO TRIM slot\n");
     {
-        Plug p; p.input = sine(p.sr, -24.0);          // -6 VU at the default -18 dBFS reference
-        p.runFor(1.0);
-        p.set(kAutoTrim, 1.0f); p.runFor(0.1);
-        CHECK(p.get(kAutoTrim) < 0.5f && p.get(kAutoBusy) >= 0.5f, "tap AUTO: trigger resets, listening lamp on");
-        p.runFor(3.2);
-        CHECK(p.get(kAutoBusy) < 0.5f && p.text(kTrim) == "+6.0 dB", "after 3 s: Trim set to %s, lamp off", p.text(kTrim).c_str());
-        p.runFor(2.0);
-        const int f0 = vuFrame(0.0);
-        CHECK(std::abs(p.frame(kNeedleL) - f0) <= 1, "...and the needle now sits on 0 VU (frame %d, expect %d)", p.frame(kNeedleL), f0);
-        p.bitExact = true;
-        p.expectGain = std::pow(10.0f, 6.0f / 20.0f); p.maxGainErr = 0.0; p.runFor(0.3);
-        CHECK(p.maxGainErr < 1e-5, "the audio gain really is +6 dB");
-    }
-    {
-        Plug p; p.input = sine(p.sr, -15.0); p.set(kTrim, norm(140, 241));   // trim +2.0, program +5 VU after trim
-        p.runFor(1.5);
-        p.set(kAutoTrim, 1.0f); p.runFor(3.3);
-        CHECK(p.text(kTrim) == "-3.0 dB", "corrects relative to the current trim (+2.0 -> %s)", p.text(kTrim).c_str());
-    }
-    {
-        Plug p; p.runFor(0.5);
-        p.set(kTrim, norm(130, 241));                  // +1.0 dB
-        p.set(kAutoTrim, 1.0f); p.runFor(3.3);
-        CHECK(p.text(kTrim) == "+1.0 dB", "silence: Trim left alone (%s)", p.text(kTrim).c_str());
-        p.input = sine(p.sr, -24.0);
-        p.set(kAutoTrim, 1.0f); p.runFor(1.0); p.set(kAutoTrim, 1.0f); p.runFor(3.0);
-        CHECK(p.text(kTrim) == "+1.0 dB" && p.get(kAutoBusy) < 0.5f, "a second tap cancels");
-    }
-    {
-        Plug a; a.set(kAutoTrim, 1.0f);
-        auto chunk = a.save();
-        Plug b; b.load(chunk); b.input = sine(b.sr, -24.0); b.runFor(4.0);
-        CHECK(b.get(kAutoTrim) < 0.5f && b.text(kTrim) == "0.0 dB", "a saved AUTO trigger never fires on load");
+        Plug p; p.input = sine(p.sr, -24.0); p.runFor(0.5);
+        p.set(kAutoTrim, 1.0f); p.runFor(4.0);
+        CHECK(p.get(kAutoTrim) < 0.5f && p.text(kTrim) == "0.0 dB" && p.bitExact, "tapping it does nothing (trim %s, audio untouched)",
+              p.text(kTrim).c_str());
     }
 
     std::printf("Phase correlation\n");
@@ -484,6 +461,131 @@ static void v02()
     }
 }
 
+static bool near(const std::string& text, double expect, double tol)
+{
+    char* end = nullptr;
+    const double v = std::strtod(text.c_str() + (text.rfind("M ", 0) == 0 ? 2 : 0), &end);
+    return end != nullptr && end != text.c_str() && std::fabs(v - expect) <= tol + 1e-9;
+}
+
+static void lufs()
+{
+    auto norm = [](float v, float lo, float hi) { return (v - lo) / (hi - lo); };
+    std::printf("LUFS readouts (output, post-processing)\n");
+    {
+        Plug p(48000.0); p.input = sine(p.sr, -23.0);
+        CHECK(p.text(kIntegrated) == "--.-" && p.text(kShortTerm) == "--.-" && p.text(kTpMax) == "--.-", "before audio: \"--.-\"");
+        p.runFor(6.0);
+        CHECK(near(p.text(kIntegrated), -23.0, 0.1) && near(p.text(kShortTerm), -23.0, 0.1) && near(p.text(kMomentary), -23.0, 0.1)
+              && p.text(kMomentary).rfind("M ", 0) == 0,
+              "-23 dBFS stereo sine: I %s, S %s, %s", p.text(kIntegrated).c_str(), p.text(kShortTerm).c_str(), p.text(kMomentary).c_str());
+        CHECK(near(p.text(kTpMax), -23.0, 0.1) && p.text(kGainRed) == "0.0", "TP MAX %s dBTP, GR %s", p.text(kTpMax).c_str(), p.text(kGainRed).c_str());
+        CHECK(p.text(kElapsed) == "00:05" || p.text(kElapsed) == "00:06", "elapsed %s", p.text(kElapsed).c_str());
+        CHECK(p.text(kAutoState) == "AUTO OFF" && p.bitExact, "AUTO OFF, LIMITER off: audio bit-exact");
+
+        p.set(kMeasure, 1.0f);                       // HOLD
+        p.input = sine(p.sr, -13.0); p.runFor(4.0);
+        CHECK(near(p.text(kIntegrated), -23.0, 0.1) && near(p.text(kShortTerm), -13.0, 0.1) && near(p.text(kTpMax), -23.0, 0.1)
+              && (p.text(kElapsed) == "00:05" || p.text(kElapsed) == "00:06"),
+              "HOLD: I %s and TP MAX %s frozen, S live (%s), elapsed %s", p.text(kIntegrated).c_str(), p.text(kTpMax).c_str(),
+              p.text(kShortTerm).c_str(), p.text(kElapsed).c_str());
+        p.set(kMeasure, 0.0f);
+        p.set(kLufsClear, 1.0f); p.runFor(0.2);
+        CHECK(p.get(kLufsClear) < 0.5f && p.text(kIntegrated) == "--.-" && p.text(kElapsed) == "00:00" && near(p.text(kTpMax), -13.0, 0.1),
+              "CLEAR: I restarts (%s), elapsed %s, TP MAX from now (%s)", p.text(kIntegrated).c_str(), p.text(kElapsed).c_str(), p.text(kTpMax).c_str());
+        p.runFor(3.0);
+        CHECK(near(p.text(kIntegrated), -13.0, 0.1), "...then measures the new programme (%s)", p.text(kIntegrated).c_str());
+    }
+    std::printf("TARGET / CEILING arrows\n");
+    {
+        Plug p;
+        CHECK(p.text(kTarget) == "-14.0 LUFS" && p.text(kCeiling) == "-1.0 dBTP", "defaults %s, %s", p.text(kTarget).c_str(), p.text(kCeiling).c_str());
+        p.set(kTargetUp, 1.0f); p.runFor(0.05);
+        CHECK(p.text(kTarget) == "-13.5 LUFS" && p.get(kTargetUp) < 0.5f, "TARGET > steps 0.5 (%s)", p.text(kTarget).c_str());
+        for (int i = 0; i < 4; ++i) { p.set(kTargetDown, 1.0f); p.runFor(0.05); }
+        CHECK(p.text(kTarget) == "-15.5 LUFS", "TARGET < (%s)", p.text(kTarget).c_str());
+        p.set(kTarget, 0.99f);
+        for (int i = 0; i < 3; ++i) { p.set(kTargetUp, 1.0f); p.runFor(0.05); }
+        CHECK(p.text(kTarget) == "-9.0 LUFS", "TARGET stops at -9 (%s)", p.text(kTarget).c_str());
+        p.set(kCeilUp, 1.0f); p.runFor(0.05);
+        p.set(kCeilUp, 1.0f); p.runFor(0.05);
+        CHECK(p.text(kCeiling) == "-0.8 dBTP", "CEILING > steps 0.1 (%s)", p.text(kCeiling).c_str());
+        p.set(kCeiling, 0.0f); p.set(kCeilDown, 1.0f); p.runFor(0.05);
+        CHECK(p.text(kCeiling) == "-6.0 dBTP", "CEILING stops at -6 (%s)", p.text(kCeiling).c_str());
+    }
+    std::printf("LIMITER\n");
+    {
+        Plug p; p.input = sine(p.sr, -3.0, 1.0, 997.0);
+        const int io0 = p.automate().ioChanged;
+        p.set(kLimiter, 1.0f);
+        const int lat = p.e->initialDelay;
+        CHECK(lat > 100 && lat < 200 && p.automate().ioChanged > io0, "on: latency %d samples (%.1f ms) reported, host told (IOChanged)",
+              lat, lat * 1000.0 / p.sr);
+        p.set(kTrim, norm(6.0f, -12.0f, 12.0f));     // +6 dB into a -1.0 dBTP ceiling
+        p.runFor(0.5);
+        p.set(kLufsClear, 1.0f);                     // TRUE PEAK MAX from here (the 20 ms switch-on fade is past)
+        p.outPeak = 0.0; p.runFor(1.0);
+        CHECK(p.outPeak <= std::pow(10.0, -1.0 / 20.0) && p.outPeak > std::pow(10.0, -1.5 / 20.0) && near(p.text(kGainRed), 4.1, 0.2),
+              "-3 dBFS + 6 dB trim: output peak %.2f dBFS, GR %s dB", 20 * std::log10(p.outPeak), p.text(kGainRed).c_str());
+        CHECK(near(p.text(kTpMax), -1.1, 0.1), "TRUE PEAK MAX (post-limiter) %s dBTP", p.text(kTpMax).c_str());
+        p.set(kLimiter, 0.0f);
+        CHECK(p.e->initialDelay == 0, "off: latency back to 0");
+        p.runFor(4.0);
+        CHECK(p.text(kAutoState) == "CLIP RISK" && near(p.text(kGainRed), 0.0, 0.0), "LIMITER off and over 0 dBTP: CLIP RISK, GR %s",
+              p.text(kGainRed).c_str());
+        p.outPeak = 0.0; p.runFor(0.5);
+        CHECK(p.outPeak > 1.3, "no hidden limiting with LIMITER off (peak %.2f dBFS)", 20 * std::log10(p.outPeak));
+        p.set(kTrim, 0.5f); p.input = sine(p.sr, -20.0);
+        p.runFor(4.0);
+        CHECK(p.text(kAutoState) == "AUTO OFF", "CLIP RISK clears after 3 s of safe level");
+    }
+    {
+        Plug p; p.set(kLimiter, 1.0f); p.set(kBypass, 1.0f); p.input = sine(p.sr, 0.0);
+        p.runFor(1.0);
+        CHECK(p.e->initialDelay > 0 && p.outPeak <= 1.0 && p.outPeak > 0.99, "BYPASS with LIMITER on: no limiting (peak %.3f), latency kept",
+              p.outPeak);
+    }
+    std::printf("AUTO loudness\n");
+    {
+        Plug p(48000.0); p.input = sine(p.sr, -24.0);
+        p.set(kLufsAuto, 1.0f);
+        p.runFor(2.0);
+        CHECK(p.text(kAutoState) == "AUTO LEARNING" && p.text(kAutoGain) == "0.0 dB", "first seconds: %s, %s",
+              p.text(kAutoState).c_str(), p.text(kAutoGain).c_str());
+        p.runFor(30.0, { 480 });
+        CHECK(near(p.text(kAutoGain), 10.0, 0.35) && p.text(kAutoState) == "AUTO IN RANGE", "-24 LUFS programme, TARGET -14: %s, %s",
+              p.text(kAutoGain).c_str(), p.text(kAutoState).c_str());
+        p.set(kLufsClear, 1.0f); p.runFor(6.0);
+        CHECK(near(p.text(kIntegrated), -14.0, 0.4) && near(p.text(kAutoGain), 10.0, 0.35), "output integrated %s LUFS; CLEAR kept the gain (%s)",
+              p.text(kIntegrated).c_str(), p.text(kAutoGain).c_str());
+        p.set(kTrim, norm(1.0f, -12.0f, 12.0f));       // +1 dB on purpose
+        p.set(kLufsClear, 1.0f); p.runFor(6.0);
+        CHECK(near(p.text(kIntegrated), -13.0, 0.4), "TRIM +1 dB is an offset AUTO keeps: %s LUFS", p.text(kIntegrated).c_str());
+        p.input = [](int64_t, float& l, float& r) { l = r = 0.0f; };
+        const std::string g = p.text(kAutoGain);
+        p.runFor(5.0);
+        CHECK(p.text(kAutoState) == "AUTO HOLD (SILENCE)" && p.text(kAutoGain) == g, "silence: %s, gain stays %s",
+              p.text(kAutoState).c_str(), p.text(kAutoGain).c_str());
+        p.set(kLufsAuto, 0.0f); p.runFor(6.0);
+        CHECK(p.text(kAutoGain) == "0.0 dB" && p.text(kAutoState) == "AUTO OFF", "AUTO off: gain glides back to %s", p.text(kAutoGain).c_str());
+        p.set(kTrim, 0.5f); p.input = sine(p.sr, -24.0); p.runFor(0.2);
+        p.bitExact = true; p.runFor(0.5);
+        CHECK(p.bitExact, "...and the audio is bit-exact again");
+    }
+    std::printf("Settings saved, measurements not\n");
+    {
+        Plug a; a.input = sine(a.sr, -20.0);
+        a.set(kTarget, norm(-16.0f, -23.0f, -9.0f)); a.set(kLimiter, 1.0f); a.set(kMeasure, 1.0f); a.set(kLufsClear, 1.0f);
+        a.runFor(2.0);
+        auto chunk = a.save();
+        Plug b; b.load(chunk);
+        CHECK(b.text(kTarget) == "-16.0 LUFS" && b.get(kLimiter) >= 0.5f && b.get(kMeasure) >= 0.5f && b.e->initialDelay > 0,
+              "TARGET, LIMITER (and its latency), HOLD restored");
+        b.runFor(0.3);
+        CHECK(b.text(kIntegrated) == "--.-" && b.text(kTpMax) == "--.-" && b.get(kLufsClear) < 0.5f, "no saved readings; CLEAR not re-fired");
+    }
+}
+
 static void instances()
 {
     std::printf("Multiple instances\n");
@@ -517,6 +619,7 @@ int main(int argc, char** argv)
     react();
     cycle();
     v02();
+    lufs();
     instances();
     std::printf("\nscenario_host: %d passed, %d failed\n", g_pass, g_fail);
     return g_fail == 0 ? 0 : 1;

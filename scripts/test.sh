@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Full verification: build, core unit tests, SDK host simulator, scenario host on the real binary.
+# Full verification: build, core unit tests, SDK host simulator, scenario host on the real binary,
+# loudness cross-check against FFmpeg (skipped without ffmpeg), skin validation.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SDK="$ROOT/third_party/mpc-plugin-builder-sdk"
@@ -12,6 +13,8 @@ echo; echo "== SDK host simulator"
 "$SDK/.sdk-tools/host_sim" "$LIB" test --seconds 4 --wav plugin/build/hostsim.wav
 echo; echo "== scenario host (real plugin binary)"
 ./build/scenario_host "$LIB" plugin/build
+echo; echo "== loudness / true peak vs FFmpeg ebur128"
+python3 scripts/lufs_crosscheck.py
 echo; echo "== skin validation"
 python3 scripts/check_skins.py
 echo; echo "ALL CHECKS PASSED"

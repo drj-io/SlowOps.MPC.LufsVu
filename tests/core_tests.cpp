@@ -3,7 +3,11 @@
 #include "slowops/vumeter/VuEngine.hpp"
 #include "slowops/vumeter/Heat.hpp"
 #include "slowops/vumeter/HueCycle.hpp"
-#include "slowops/vumeter/AutoTrim.hpp"
+#include "slowops/vumeter/AutoLoudness.hpp"
+#include "slowops/vumeter/LoudnessMeter.hpp"
+#include "slowops/vumeter/TruePeak.hpp"
+#include "slowops/vumeter/TruePeakLimiter.hpp"
+#include <random>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -53,7 +57,6 @@ struct Rig
     }
 };
 
-static double deflection(double vu) { return std::pow(10.0, vu / 20.0); }
 static double dbToAmp(double db) { return std::pow(10.0, db / 20.0); }
 
 static Gen sine(double sr, double peakDb, double hz = 1000.0, double polL = 1.0, double polR = 1.0)
@@ -430,33 +433,315 @@ static void testV02()
         Rig e(44100); e.run(1.0, [](long n, float& l, float& r) { l = (float)(0.1 * std::sin(n * 0.1)); r = 0.0f; });
         CHECK(e.e.correlation().hasSignal() && std::fabs(e.e.correlation().value()) < 1e-6, "one side silent: 0");
     }
+}
 
-    std::printf("AUTO TRIM\n");
+// ---------------------------------------------------------------------------- v0.3: LUFS
+// A sequence of stereo 1 kHz sine sections (peak level dBFS, seconds) through a LoudnessMeter.
+struct Section { double db, s; };
+static void feedSections(LoudnessMeter& m, double sr, std::initializer_list<Section> secs, double hz = 1000.0)
+{
+    long n = 0;
+    for (const Section& sec : secs)
     {
-        Rig rig(44100);
-        AutoTrim at; at.start(3.0, 44100.0);
-        auto s = sine(44100, -24.0);    // -6 VU at ref -18
-        rig.run(1.0, s);                // needle settles first (the plugin listens to the live needle)
-        while (at.active())
+        const double a = sec.db <= -200.0 ? 0.0 : dbToAmp(sec.db);
+        const long len = std::lround(sec.s * sr);
+        for (long i = 0; i < len; ++i, ++n)
         {
-            rig.run(512.0 / 44100.0, s);
-            at.feed(rig.e.deflection(kLeft), 512);
+            const double x = a * std::sin(2.0 * kPi * hz * (double)n / sr);
+            m.process(x, x);
         }
-        double corr = 0;
-        CHECK(at.takeResult(corr) && std::fabs(corr - 6.0) < 0.2, "a -6 VU program asks for +%.2f dB", corr);
-        CHECK(!at.takeResult(corr), "the result is taken once");
+    }
+}
+
+static void testLoudness()
+{
+    std::printf("Loudness (EBU Tech 3341 stereo cases, +-0.1 LU)\n");
+    for (double sr : {44100.0, 48000.0})
+    {
+        { LoudnessMeter m; m.prepare(sr); feedSections(m, sr, {{-23, 20}});
+          CHECK(std::fabs(m.momentary() + 23) <= 0.1 && std::fabs(m.shortTerm() + 23) <= 0.1 && std::fabs(m.integrated() + 23) <= 0.1,
+                "%.0f Hz case 1 (-23 dBFS 20 s): M %.2f S %.2f I %.2f", sr, m.momentary(), m.shortTerm(), m.integrated()); }
+        { LoudnessMeter m; m.prepare(sr); feedSections(m, sr, {{-33, 20}});
+          CHECK(std::fabs(m.momentary() + 33) <= 0.1 && std::fabs(m.shortTerm() + 33) <= 0.1 && std::fabs(m.integrated() + 33) <= 0.1,
+                "%.0f Hz case 2 (-33 dBFS 20 s): M %.2f S %.2f I %.2f", sr, m.momentary(), m.shortTerm(), m.integrated()); }
+        { LoudnessMeter m; m.prepare(sr); feedSections(m, sr, {{-36, 10}, {-23, 60}, {-36, 10}});
+          CHECK(std::fabs(m.integrated() + 23) <= 0.1, "%.0f Hz case 3 (relative gate): I %.2f", sr, m.integrated()); }
+        { LoudnessMeter m; m.prepare(sr); feedSections(m, sr, {{-72, 10}, {-36, 10}, {-23, 60}, {-36, 10}, {-72, 10}});
+          CHECK(std::fabs(m.integrated() + 23) <= 0.1, "%.0f Hz case 4 (absolute + relative gate): I %.2f", sr, m.integrated()); }
+        { LoudnessMeter m; m.prepare(sr); feedSections(m, sr, {{-26, 20}, {-20, 20.1}, {-26, 20}});
+          CHECK(std::fabs(m.integrated() + 23) <= 0.1, "%.0f Hz case 5: I %.2f", sr, m.integrated()); }
+        {   // case 9: 1.34 s at -20 / 1.66 s at -30, repeated: Short-term is -23 throughout once 3 s have passed
+            LoudnessMeter m; m.prepare(sr);
+            feedSections(m, sr, {{-20, 1.34}, {-30, 1.66}});
+            double lo = 0, hi = -100;
+            for (int k = 0; k < 5; ++k)
+            {
+                const uint64_t h0 = m.hops();
+                LoudnessMeter* mp = &m;
+                (void)h0; (void)mp;
+                for (int part = 0; part < 30; ++part)    // 0.1 s steps across one period
+                {
+                    // continue the alternating pattern in 0.1 s slices with the right levels
+                    const double t = 3.0 + k * 3.0 + part * 0.1;
+                    const double ph = std::fmod(t, 3.0);
+                    (void)ph;
+                }
+            }
+            // simpler and exact: feed the whole pattern once more and sample S at every hop
+            LoudnessMeter s; s.prepare(sr);
+            const long len = std::lround(15.0 * sr);
+            const long first = std::lround(1.34 * sr), period = std::lround(3.0 * sr);
+            uint64_t lastHop = 0;
+            for (long i = 0; i < len; ++i)
+            {
+                const double a = (i % period) < first ? dbToAmp(-20) : dbToAmp(-30);
+                const double x = a * std::sin(2.0 * kPi * 1000.0 * (double)i / sr);
+                s.process(x, x);
+                if (s.hops() != lastHop)
+                {
+                    lastHop = s.hops();
+                    if (i > (long)(3.05 * sr)) { lo = std::fmin(lo, s.shortTerm()); hi = std::fmax(hi, s.shortTerm()); }
+                }
+            }
+            CHECK(lo >= -23.1 && hi <= -22.9, "%.0f Hz case 9 (Short-term of a 3 s pattern): %.2f .. %.2f", sr, lo, hi);
+        }
     }
     {
-        AutoTrim at; at.start(1.0, 44100.0);
-        for (int i = 0; i < 100; ++i) at.feed(0.0, 512);
-        double corr = 1;
-        CHECK(at.takeResult(corr) && corr == 0.0 && !at.heardSignal(), "silence: no change");
+        LoudnessMeter m; m.prepare(48000); feedSections(m, 48000, {{-300, 5}});
+        CHECK(!std::isfinite(m.momentary()) && !std::isfinite(m.shortTerm()) && !std::isfinite(m.integrated())
+              && !std::isnan(m.integrated()), "silence: no value (never NaN)");
+        feedSections(m, 48000, {{-80, 5}});
+        CHECK(!std::isfinite(m.integrated()) && m.shortTerm() < -75, "-80 dBFS: below the absolute gate, I has no value (S %.1f)", m.shortTerm());
     }
     {
-        AutoTrim at; at.start(2.0, 44100.0);
-        for (int i = 0; i < 200; ++i) at.feed(i % 2 ? deflection(-3.0) : 0.0, 512);   // music with gaps
-        double corr = 0;
-        CHECK(at.takeResult(corr) && std::fabs(corr - 3.0) < 0.01, "gaps below the gate are ignored (+%.2f dB)", corr);
+        LoudnessMeter m; m.prepare(48000);
+        long n = 0;
+        for (; n < 48000 * 5; ++n) { const double x = 0.1 * std::sin(n * 0.13); m.process(x, 0.0); }
+        const double oneSide = m.integrated();
+        LoudnessMeter b; b.prepare(48000);
+        for (n = 0; n < 48000 * 5; ++n) { const double x = 0.1 * std::sin(n * 0.13); b.process(x, x); }
+        CHECK(std::fabs(b.integrated() - oneSide - 3.01) < 0.05, "channel energies add: identical L+R reads +3.01 LU over one side (%.2f)",
+              b.integrated() - oneSide);
+        LoudnessMeter c; c.prepare(48000); c.setMonoInput(true);
+        for (n = 0; n < 48000 * 5; ++n) { const double x = 0.1 * std::sin(n * 0.13); c.process(x, x); }
+        CHECK(std::fabs(c.integrated() - oneSide) < 0.01, "a single physical channel is counted once");
+    }
+    {
+        LoudnessMeter m; m.prepare(48000);
+        feedSections(m, 48000, {{-20, 10}});
+        m.setRunning(false);
+        feedSections(m, 48000, {{-40, 10}});
+        CHECK(std::fabs(m.integrated() + 20) < 0.1 && std::fabs(m.elapsedSeconds() - 10.0) < 0.15 && m.shortTerm() < -35,
+              "HOLD freezes I (%.2f) and elapsed (%.1f s); S stays live (%.1f)", m.integrated(), m.elapsedSeconds(), m.shortTerm());
+        m.setRunning(true);
+        m.clear();
+        feedSections(m, 48000, {{-30, 5}});
+        CHECK(std::fabs(m.integrated() + 30) < 0.1 && std::fabs(m.elapsedSeconds() - 5.0) < 0.15, "CLEAR restarts I (%.2f) and elapsed",
+              m.integrated());
+    }
+}
+
+static void testTruePeak()
+{
+    std::printf("True peak\n");
+    for (double sr : {44100.0, 48000.0})
+    {
+        TruePeakDetector d; d.prepare(sr);
+        double sp = 0;
+        for (int n = 0; n < 20000; ++n)
+        {
+            const float x = (float)std::sin(0.5 * kPi * n + 0.25 * kPi);
+            sp = std::fmax(sp, std::fabs(x));
+            d.process(x);
+        }
+        const double tp = 20 * std::log10(d.maxPeak());
+        CHECK(std::fabs(20 * std::log10(sp) + 3.01) < 0.02 && tp > -0.4 && tp < 0.2,
+              "%.0f Hz fs/4 at 45 deg: sample peak %.2f dBFS, true peak %+.2f dBTP (within +0.2/-0.4)", sr, 20 * std::log10(sp), tp);
+    }
+    {
+        double worst = 0;
+        for (double f = 100; f <= 20000; f *= 1.17)
+        {
+            TruePeakDetector d; d.prepare(44100);
+            for (int n = 0; n < 44100; ++n)                 // 1 s with a 50 ms fade-in (no onset transient)
+            {
+                const double env = n < 2205 ? n / 2205.0 : 1.0;
+                d.process((float)(env * 0.5 * std::sin(2 * kPi * f * n / 44100.0 + 0.7)));
+            }
+            worst = std::fmax(worst, std::fabs(20 * std::log10(d.maxPeak() / 0.5)));
+        }
+        CHECK(worst < 0.2, "steady sines 100 Hz..20 kHz: true peak within %.3f dB of the true amplitude", worst);
+    }
+    {
+        TruePeakDetector d; d.prepare(48000);
+        for (int n = 0; n < 4800; ++n) d.process(n == 100 ? 0.9f : 0.0f);
+        for (int n = 0; n < 48000; ++n) d.process((float)(0.01 * std::sin(n * 0.05)));
+        CHECK(d.maxPeak() >= 0.899, "the maximum holds after quieter audio (%.3f)", d.maxPeak());
+        d.clearMax();
+        d.process(0.0f);
+        CHECK(d.maxPeak() < 0.02, "clearMax restarts it");
+    }
+}
+
+using StereoGen = std::function<void(long n, float& l, float& r)>;
+
+// Run a limiter over `seconds` of a generator; returns output true peak (dBTP, both channels).
+static double runLimiter(TruePeakLimiter& lim, double sr, double seconds, const StereoGen& g, double* maxGr = nullptr,
+                         double* ratioErr = nullptr)
+{
+    TruePeakDetector ml, mr; ml.prepare(sr); mr.prepare(sr);
+    const long len = std::lround(seconds * sr);
+    for (long n = 0; n < len; ++n)
+    {
+        float l, r; g(n, l, r);
+        lim.process(l, r);
+        ml.process(l); mr.process(r);
+        if (maxGr) *maxGr = std::fmax(*maxGr, lim.gainReductionDb());
+        if (ratioErr && std::fabs(r) > 1e-3f) *ratioErr = std::fmax(*ratioErr, std::fabs(l / r - 2.0f));
+    }
+    return 20 * std::log10(std::fmax(ml.maxPeak(), mr.maxPeak()));
+}
+
+static void testLimiter()
+{
+    std::printf("True-peak limiter\n");
+    const double sr = 44100;
+    std::mt19937 rng(7);
+    std::normal_distribution<double> nd(0, 1);
+    struct Case { const char* name; StereoGen g; };
+    const Case cases[] = {
+        { "1 kHz sine +12 dB", [&](long n, float& l, float& r) { l = r = (float)(4 * std::sin(2 * kPi * 1000 * n / sr)); } },
+        { "fs/4 at 45 deg (inter-sample overs)", [&](long n, float& l, float& r) { l = r = (float)(2 * std::sin(0.5 * kPi * n + 0.25 * kPi)); } },
+        { "100 Hz square", [&](long n, float& l, float& r) { l = r = ((n / 221) % 2) ? 2.0f : -2.0f; } },
+        { "noise bursts", [&](long n, float& l, float& r) { const double e = ((n / 5000) % 3 == 0) ? 3.0 : 0.3; l = (float)(e * nd(rng)); r = (float)(e * nd(rng)); } },
+        { "kick drum", [&](long n, float& l, float& r) { const long k = n % 22050; l = r = (float)(3 * std::exp(-k / 2000.0) * std::sin(2 * kPi * 60 * k / sr * (1 + 3 * std::exp(-k / 300.0)))); } },
+    };
+    for (double ceil : {-1.0, -0.1, -6.0})
+        for (const Case& c : cases)
+        {
+            TruePeakLimiter lim; lim.prepare(sr); lim.setCeilingDb(ceil); lim.setEnabled(true); lim.reset();
+            double gr = 0;
+            const double tp = runLimiter(lim, sr, 3.0, c.g, &gr);
+            CHECK(tp <= ceil + 0.05 && gr > 1.0, "ceiling %.1f, %s: output %.2f dBTP, max GR %.1f dB", ceil, c.name, tp, gr);
+        }
+    {
+        TruePeakLimiter lim; lim.prepare(sr); lim.setEnabled(true); lim.reset();
+        double err = 0, gr = 0;
+        runLimiter(lim, sr, 2.0, [&](long n, float& l, float& r) { const double s = 2 * std::sin(2 * kPi * 3000 * n / sr); l = (float)s; r = (float)(0.5 * s); }, &gr, &err);
+        CHECK(gr > 3.0 && err < 1e-4, "stereo-linked: L = 2 R stays 2:1 while limiting %.1f dB (error %.1e)", gr, err);
+    }
+    {
+        TruePeakLimiter lim; lim.prepare(sr); lim.setEnabled(true); lim.reset();
+        long at = -1;
+        for (long n = 0; n < 2000; ++n) { float l = n == 10 ? 0.1f : 0.0f, r = l; lim.process(l, r); if (l != 0.0f && at < 0) at = n - 10; }
+        CHECK(at == lim.latencySamples() && lim.latencySamples() > 100 && lim.latencySamples() < 200,
+              "latency: an impulse comes out exactly %ld samples later (reported %d, ~3.2 ms)", at, lim.latencySamples());
+    }
+    {
+        TruePeakLimiter lim; lim.prepare(sr); lim.reset();
+        bool exact = true;
+        for (long n = 0; n < 10000; ++n) { const float x = (float)(3 * std::sin(n * 0.01)); float l = x, r = -x; lim.process(l, r); exact = exact && l == x && r == -x; }
+        CHECK(exact && lim.gainReductionDb() == 0.0, "off: untouched, no delay, no gain reduction");
+    }
+    {   // switch on and off mid-stream: the crossfade keeps every step small
+        TruePeakLimiter lim; lim.prepare(sr); lim.reset();
+        float prev = 0; double worst = 0;
+        for (long n = 0; n < (long)(sr * 2); ++n)
+        {
+            if (n == (long)(sr * 0.5)) lim.setEnabled(true);
+            if (n == (long)(sr * 1.5)) lim.setEnabled(false);
+            const float x = (float)(0.3 * std::sin(2 * kPi * 100 * n / sr));
+            float l = x, r = x; lim.process(l, r);
+            if (n > 0) worst = std::fmax(worst, std::fabs(l - prev));
+            prev = l;
+        }
+        const double maxStep = 0.3 * 2 * kPi * 100 / sr;
+        CHECK(worst < 3.0 * maxStep, "on/off crossfade: largest sample step %.4f (signal's own %.4f)", worst, maxStep);
+    }
+    {   // bypass with the limiter on: the delayed input, bit for bit
+        TruePeakLimiter lim; lim.prepare(sr); lim.setEnabled(true); lim.setBypass(true); lim.reset();
+        std::vector<float> in;
+        bool exact = true;
+        const int d = lim.latencySamples();
+        for (long n = 0; n < 20000; ++n)
+        {
+            const float x = (float)(3 * std::sin(n * 0.01));
+            in.push_back(x);
+            float l = x, r = x; lim.process(l, r);
+            if (n >= d) exact = exact && l == in[(size_t)(n - d)];
+        }
+        CHECK(exact, "bypass with LIMITER on: output is the input delayed by the latency, bit-exact");
+    }
+}
+
+static void testAutoLoudness()
+{
+    std::printf("AUTO loudness\n");
+    const double sr = 48000;
+    const int block = 480;
+    // stereo 1 kHz sine at `db` dBFS peak (= db LUFS), fed through AUTO; the output meter reads x * gain.
+    struct Run
+    {
+        AutoLoudness a; LoudnessMeter out; double sr; long n = 0; double maxSlew = 0;
+        explicit Run(double s) : sr(s) { a.prepare(s); out.prepare(s); a.setTargetLufs(-14.0); a.setEnabled(true); }
+        void go(double seconds, double db)
+        {
+            const double amp = db <= -200 ? 0.0 : std::pow(10.0, db / 20.0);
+            for (long k = 0; k < std::lround(seconds * sr / block); ++k)
+            {
+                const double g = std::pow(10.0, a.gainDb() / 20.0);
+                for (int i = 0; i < block; ++i, ++n)
+                {
+                    const double x = amp * std::sin(2.0 * kPi * 1000.0 * (double)n / sr);
+                    a.feed(x, x);
+                    out.process(x * g, x * g);
+                }
+                const double before = a.gainDb();
+                a.advance(block);
+                maxSlew = std::fmax(maxSlew, std::fabs(a.gainDb() - before) / (block / sr));
+            }
+        }
+    };
+    {
+        Run r(sr);
+        r.go(2.0, -24.0);
+        CHECK(r.a.state() == AutoLoudness::kLearning && r.a.gainDb() == 0.0, "first 3 s: LEARNING, gain held");
+        r.go(38.0, -24.0);
+        CHECK(std::fabs(r.a.gainDb() - 10.0) < 0.35 && r.maxSlew <= 0.5 + 1e-9 && r.a.state() == AutoLoudness::kInRange,
+              "-24 LUFS towards -14: gain %+.2f dB, slew <= %.2f dB/s, IN RANGE", r.a.gainDb(), r.maxSlew);
+        r.out.clear();
+        r.go(10.0, -24.0);
+        CHECK(std::fabs(r.out.integrated() + 14.0) < 0.5, "output integrated %.2f LUFS (target -14)", r.out.integrated());
+        const double g = r.a.gainDb();
+        r.go(10.0, -300.0);
+        CHECK(r.a.gainDb() == g && r.a.state() == AutoLoudness::kHold, "silence: HOLD, gain unchanged (%+.2f)", r.a.gainDb());
+        r.a.clear();
+        r.go(0.5, -24.0);
+        CHECK(r.a.gainDb() == g && r.a.state() == AutoLoudness::kLearning, "CLEAR: relearns without moving the gain");
+        r.a.setEnabled(false);
+        r.go(4.0, -24.0);
+        CHECK(std::fabs(r.a.gainDb() - std::fmax(0.0, g - 8.0)) < 0.05, "AUTO off: returns at 2 dB/s (%+.2f after 4 s)", r.a.gainDb());
+        r.go(2.0, -24.0);
+        CHECK(r.a.gainDb() == 0.0 && r.a.state() == AutoLoudness::kOff, "...and lands exactly on 0 dB");
+    }
+    {
+        Run r(sr);
+        r.go(10.0, -6.0);
+        CHECK(r.a.gainDb() < 0.0 && r.a.state() == AutoLoudness::kAdjusting, "a louder programme turns down (%+.2f dB, ADJUSTING)", r.a.gainDb());
+    }
+    {
+        Run r(sr);
+        r.go(40.0, -40.0);
+        CHECK(std::fabs(r.a.gainDb() - 12.0) <= AutoLoudness::kStopLU + 1e-9 && r.a.state() == AutoLoudness::kGainLimit, "needs +26 dB: stops at +12 within the deadband (GAIN LIMIT; %+.2f, state %d)",
+              r.a.gainDb(), (int)r.a.state());
+    }
+    {
+        Run r(sr);
+        r.go(10.0, -24.0);
+        const double g0 = r.a.gainDb();
+        r.a.setTargetLufs(-18.0);
+        r.go(1.5, -24.0);
+        CHECK(r.maxSlew <= 0.5 + 1e-9 && r.a.gainDb() != g0, "a TARGET change ramps (slew %.2f dB/s)", r.maxSlew);
     }
 }
 
@@ -465,6 +750,10 @@ int main()
     testHeat();
     testCycle();
     testV02();
+    testLoudness();
+    testTruePeak();
+    testLimiter();
+    testAutoLoudness();
     testCalibration();
     testScale();
     testStep();
