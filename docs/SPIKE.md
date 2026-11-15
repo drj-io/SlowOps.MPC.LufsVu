@@ -41,7 +41,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 3 | Play program material | Needles move smoothly at about 30 FPS. No tearing, no blank frames, and no doubled needle at sector boundaries (watch around −10, −3, 0 and +1) |
 | 4 | Switch between METER and SETUP during playback | Both tabs draw fully; the meters keep moving when you return; audio is unaffected |
 | 5 | On SETUP, tap WARM / COOL / OFF, then return to METER | The correct face appears with no flash of another face |
-| 6 | On LUFS, turn the TRIM knob and its Q-Link; tap BYPASS (on either tab) | Value label updates; the METER needles follow the trim; bypass returns them to the input level, and both BYPASS buttons light |
+| 6 | On LUFS, turn the TRIM knob and its Q-Link; tap BYPASS | Value label updates; the METER needles follow the trim; bypass returns them to the input level |
 | 7 | Clip the input (for example +6 dB trim on a hot loop) | The CLIP lamp lights and holds for about 2 s. Tapping the lamp clears it. Anti-phase clip still lights INPUT CLIP |
 | 8 | Check memory and responsiveness | Note memory % before and after opening the plugin and after the view swaps, the page open time, and whether touch and data-wheel response stays crisp while needles move |
 | 9 | Save the project, restart the MPC, reload | 0 VU, Peak, Light, Palette, Rate, Clip Level, Trim and Bypass are restored; needles start at rest |
@@ -51,7 +51,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 13 | (Retired in v0.3: the METER tab's one-shot AUTO trim was removed. AUTO now lives on the LUFS tab, see 17–22) | – |
 | 14 | Play mono material, then wide stereo, then flip one channel's polarity | PHASE marker near +1, then near 0, then in the red near −1. With no signal the marker parks |
 | 15 | Push the meter, then tap a CLIP lamp | MAX shows the highest reading (in each dial's lower-right corner) and clears on the tap. Set CLIP LEVEL to −1 on SETUP: a −0.5 dBFS peak now lights CLIP |
-| 16 | Open the SETUP tab: try every CALIBRATION, CLIP LEVEL, LIGHT, PALETTE and RATE button, and Q-Links 13–16 and 9 | Settings apply on METER. In CYCLE, a clip flashes the dials white for one beat; the cabinet border never changes colour |
+| 16 | Open the SETUP tab: try every CALIBRATION, CLIP LEVEL, PEAK HOLD, LIGHT, PALETTE and RATE button, and Q-Links 13–16, 9 and 10 | Settings apply on METER. In CYCLE, a clip flashes the dials white for one beat; the cabinet border never changes colour |
 | 17 | Open the LUFS tab while music plays | Needles move smoothly on the smaller dials (no jaggies or misalignment), the four numbers update and are readable at arm's length, and the status row shows AUTO OFF and the elapsed time |
 | 18 | Play a −23 dBFS 1 kHz sine (or a known −23 LUFS file) and tap CLEAR | INTEGRATED, SHORT-TERM and M read −23.0 (±0.1); TRUE PEAK MAX −23.0. RUN → HOLD freezes INTEGRATED, TRUE PEAK MAX and the time; CLEAR restarts them |
 | 19 | Tap TARGET and CEILING arrows; use Q-Links 13/14 on the LUFS tab | TARGET steps 0.5 LUFS (−23 … −9), CEILING 0.1 dB (−6.0 … −0.1); the arrow lights while pressed |
@@ -59,6 +59,8 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 21 | **Latency.** Play a sequence with a click or drum on another track. Toggle LIMITER on and off during playback | No clicks at the switch. Note whether this track shifts in time against the others when LIMITER is on (≈3.2 ms; the MPC should compensate). Repeat with two instances |
 | 22 | LIMITER on, TRIM +6 dB into a hot loop | GAIN REDUCTION shows a few dB, TRUE PEAK MAX stays at or below the CEILING, and AUTO shows LIMITED if it is also on. LIMITER off with the same trim shows CLIP RISK |
 | 23 | Save with AUTO/LIMITER/TARGET/CEILING/HOLD set, restart, reload | Settings restored (LIMITER latency reported again); readings start empty (--.-) |
+| 24 | **Data wheel.** On each tab touch a control (a button, a choice row, the TARGET/CEILING arrows, the TRIM knob), then turn the data wheel; press it | An amber ring marks the focused control; the wheel steps choices and moves TRIM/TARGET/CEILING; pressing opens the large editor; touching still toggles buttons normally. Note if the ring or the wheel does nothing (the focus wrapper is untested on hardware) |
+| 25 | METER tab: turn Q-Link 15. SETUP: PEAK HOLD button and Q-Link 10; CALIBRATION −10 and −4 | TRIM moves (watch the needles). PEAK HOLD works as before. A −10 dBFS sine reads 0 VU at −10; the plate shows the choice. A project saved before this update still loads its old CALIBRATION |
 
 ## If something fails
 

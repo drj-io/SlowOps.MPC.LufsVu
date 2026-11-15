@@ -57,8 +57,10 @@ constexpr float kMaxFloorVU = -40.0f;        // "cleared" max reading
 
 static_assert(kStereoFrames % kStereoSectors == 0 && kMonoFrames % kMonoSectors == 0, "sectors must divide frames");
 
-const char* const kRefNames[] = { "-20 dBFS", "-18 dBFS", "-14 dBFS" };
-constexpr double kRefDbfs[]   = { -20.0, -18.0, -14.0 };
+// -10 and -4 were added in v0.3 for dense, heavily compressed masters. They are appended, so a
+// saved index (the SDK restores the plain choice index when the range changes) keeps its meaning.
+const char* const kRefNames[] = { "-20 dBFS", "-18 dBFS", "-14 dBFS", "-10 dBFS", "-4 dBFS" };
+constexpr double kRefDbfs[]   = { -20.0, -18.0, -14.0, -10.0, -4.0 };
 const char* const kLightNames[] = { "Warm", "Cool", "Off", "React", "Cycle" };
 constexpr int kNumLights = 5;
 constexpr int kLightReact = 3;
@@ -86,7 +88,7 @@ public:
     {
         kReserved = 0,   // the MPC nudges index 0 on every prepare, so it does nothing
         kMode,           // retired (was Stereo / Mono); always stereo
-        kRef,            // -20 / -18 / -14 dBFS
+        kRef,            // -20 / -18 / -14 / -10 / -4 dBFS
         kPeak,           // Off / On (2 s hold)
         kLight,          // Warm / Cool / Off / React / Cycle (cosmetic). React colours the dial by program
                          // heat; Cycle travels round the hue wheel once every two bars, locked to the tempo
@@ -142,7 +144,7 @@ public:
         mpc::Param mode = mpc::choiceParam("mode", "Unused", { "Stereo", "Mono" }, 0);   // retired slot
         mode.automatable = false;
         addParam(mode);
-        addParam(mpc::choiceParam("ref", "0 VU", { kRefNames[0], kRefNames[1], kRefNames[2] }, 1));
+        addParam(mpc::choiceParam("ref", "0 VU", { kRefNames[0], kRefNames[1], kRefNames[2], kRefNames[3], kRefNames[4] }, 1));
         addParam(mpc::choiceParam("peak", "Peak Hold", { "Off", "On" }, 1));
         addParam(mpc::choiceParam("light", "Light", { kLightNames[0], kLightNames[1], kLightNames[2], kLightNames[3], kLightNames[4] }, 0));
         addParam(mpc::boolParam("bypass", "Bypass", false));

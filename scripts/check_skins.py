@@ -75,18 +75,32 @@ def main():
 
     SCALED = {'glow_stereo.png': L.REACT_GLOW_SCALE, 'glow_mono.png': L.REACT_GLOW_SCALE}
     decoded = [0]
-    widgets = 0
-    for tab in page['tabs']:
-        bgimg = tab['componentDefinition']['backgroundData']['focussed'].get('image')
-        if bgimg and png_size(bgimg) != (L.W, L.H):
-            fail('tab background %s is not %dx%d' % (bgimg, L.W, L.H))
-        for c in tab['componentDefinition']['componentsData']:
-            widgets += 1
+    widgets = [0]
+    defs = {d['key']: d['value'] for d in page['componentDefinitions']['localComponentDefinitions']}
+
+    def walk(entries, ox, oy, remap):
+        for c in entries:
             cd, b = c['componentData'], c['bounds']
             name, kind, data = cd['name'], cd['type'], cd['data']
             x, y, w, h = [int(v) for v in b['bounds'].split()]
+            x, y = x + ox, y + oy
             if x < 0 or y < 0 or x + w > L.W or y + h > L.H:
                 fail('%s: bounds %s leave the 1280x628 tab' % (name, b['bounds']))
+            if kind in defs:
+                # a focusable control: its Data handle must reach a real parameter, and its children
+                # are checked in tab coordinates
+                m = {e['key']: e['value'] for e in c['handle remapping']['map']}
+                target = remap.get(m.get('Data', 'Data'), m.get('Data', 'Data'))
+                if b['acceptsHWFocus'] != 'Yes' or not target.startswith('Parameter '):
+                    fail('%s: a focus group needs acceptsHWFocus Yes and Data -> a parameter' % name)
+                focus_rects.append((name, x, y, w, h))
+                walk(defs[kind]['componentsData'], x, y, {'Data': target})
+                continue
+            widgets[0] += 1
+            if kind == 'Focus':
+                continue
+            if 'handleName' in data:
+                data = dict(data, handleName=remap.get(data['handleName'], data['handleName']))
             for hnd in b.get('additionalInvalidatingHandles', []):
                 check_handle(hnd, name)
                 if b.get('showWhenDataModelInvalid') != 'Hide':
@@ -125,6 +139,18 @@ def main():
                 if size and (size[1] % data['numFrames'] or (size[0], size[1] // data['numFrames']) != (w, h)):
                     fail('%s: knob strip does not match %d frames of %dx%d' % (name, data['numFrames'], w, h))
 
+
+    for tab in page['tabs']:
+        bgimg = tab['componentDefinition']['backgroundData']['focussed'].get('image')
+        if bgimg and png_size(bgimg) != (L.W, L.H):
+            fail('tab background %s is not %dx%d' % (bgimg, L.W, L.H))
+        focus_rects = []
+        walk(tab['componentDefinition']['componentsData'], 0, 0, {})
+        for i, (n1, x1, y1, w1, h1) in enumerate(focus_rects):
+            for n2, x2, y2, w2, h2 in focus_rects[i + 1:]:
+                if x1 < x2 + w2 and x2 < x1 + w1 and y1 < y2 + h2 and y2 < y1 + h1:
+                    fail('%s: focus groups %s and %s overlap (a touch could reach the wrong one)' % (tab['tabName'], n1, n2))
+
     for tabmap in ql['Screen Mode Q-Links']['map']:
         for k, v in tabmap['Q-Links'].items():
             if v >= 0 and not by_index[v]['automatable']:
@@ -144,7 +170,7 @@ def main():
             print('  FAIL', e)
         sys.exit(1)
     print('  PASS %d widgets, %d parameters; decoded images: needles %.1f MiB, all images %.1f MiB'
-          ' (stereo needle strips counted once per widget)' % (widgets, n_params, mib, all_mib))
+          ' (stereo needle strips counted once per widget)' % (widgets[0], n_params, mib, all_mib))
 
 
 if __name__ == '__main__':

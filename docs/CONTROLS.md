@@ -4,12 +4,15 @@ The meter is stereo: one needle for L and one for R. Processing is opt-in: with 
 
 Signal chain: **in → AUTO gain + TRIM (one gain for L and R) → LIMITER → out**. Every meter (needles, CLIP, PHASE, MAX and all LUFS readouts) reads the **output**, so the METER and LUFS tabs always agree.
 
+**Touch, then turn.** Touch any control (a button, a row of choices, an arrow pair or the TRIM knob) and an amber ring shows that it has focus. The MPC's main **data wheel** then changes it: it steps through choices, and moves TRIM, TARGET and CEILING (hold SHIFT for fine steps). Press the data wheel (or ENTER) to open the large editor. Touching a control also banks the Q-Links to it.
+
 ## METER tab
+
+The METER tab has only the meters. PEAK HOLD is on SETUP; BYPASS and TRIM are on the LUFS tab.
 
 | Control | Q-Link (screen) | What it does |
 |---|---|---|
-| **PEAK**: ON / OFF | 13 | ON holds a CLIP lamp for 2 s after a clipped sample. OFF lights it only while clipping happens. |
-| **BYPASS** | 14 | Output = input, bit for bit (AUTO, TRIM and LIMITER ignored). With LIMITER on the output is still delayed by its 3.2 ms so timing does not jump. The meters then show the input. |
+| **TRIM** (no on-screen control here) | 15 | The same TRIM as on the LUFS tab, so you can ride the output while watching the needles. |
 | CLIP lamps (tap) | – | Light when a sample reaches the CLIP LEVEL (sample peak, not true peak). Tap a lamp to reset it **and the MAX readings**. In REACT or CYCLE a clip also **flashes the dials white for one beat**. |
 | **MAX** readouts (in each dial) | – | The highest reading each needle has shown since the last lamp tap. It includes the needle's real overshoot. |
 | **PHASE** meter (bottom rail) | – | Stereo correlation: **+1** L and R identical (mono-safe), **0** wide or unrelated, **−1** cancels in mono (red zone). The marker parks when there's no signal. |
@@ -40,7 +43,7 @@ Layout: the readout strip holds the **measurement** controls at its left end (CL
 | **CEILING** ◀ ▶ | 14 | −6.0 … −0.1 dBTP in 0.1 steps (default −1.0). The highest true peak the LIMITER lets through. **With LIMITER off the ceiling does nothing**; watch for CLIP RISK. |
 | **CLEAR** | – | Restarts INTEGRATED, TRUE PEAK MAX, the elapsed time and AUTO's estimate. It never changes the gain, so the audio does not jump. Settings are untouched. |
 | **RUN / HOLD** | 10 | HOLD freezes INTEGRATED, TRUE PEAK MAX and the time; SHORT-TERM and M stay live, and AUTO keeps working. It is a measurement hold, not a mute. |
-| **BYPASS** | 11 | The same Bypass as on METER: either button switches both. Bypass skips everything (AUTO, TRIM and LIMITER); the output is the input, bit for bit. With LIMITER on the output keeps its 3.2 ms delay, so timing does not jump. |
+| **BYPASS** | 11 | Bypass skips everything (AUTO, TRIM and LIMITER); the output is the input, bit for bit, and the meters show the input. With LIMITER on the output keeps its 3.2 ms delay, so timing does not jump. |
 | CLIP lamps (either side) | – | Same as on METER; tap to reset. |
 
 Measurements are not saved with the project: after loading, every reading starts empty. Settings are saved.
@@ -49,8 +52,9 @@ Measurements are not saved with the project: after loading, every reading starts
 
 | Control | Q-Link (screen) | What it does |
 |---|---|---|
-| **CALIBRATION**: −20 / −18 / −14 dBFS | 13 | Sets which level reads 0 VU: a 1 kHz sine whose **peak** is at the chosen level. |
+| **CALIBRATION**: −20 / −18 / −14 / −10 / −4 dBFS | 13 | Sets which level reads 0 VU: a 1 kHz sine whose **peak** is at the chosen level. −18 suits tracking and mixing. Use **−10** or **−4** for dense, heavily compressed masters, which otherwise pin the needles near +3. |
 | **CLIP LEVEL**: 0 / −0.3 / −1 / −3 dBFS | 14 | The level that lights the CLIP lamps. Use −1 or −3 for headroom before resampling or bouncing. |
+| **PEAK HOLD**: ON / OFF | 10 | ON holds a CLIP lamp for 2 s after a clipped sample. OFF lights it only while clipping happens. |
 | **LIGHT**: STATIC (WARM / COOL / OFF) | 15 | A fixed dial backlight. |
 | **LIGHT**: REACT, with **PALETTE** THERMAL / NEON / AMBER | 15, 16 | Colours the dials by how loud the music is. It warms up in about 120 ms and cools over about 0.9 s, like a glowing filament. **Thermal** runs deep blue when quiet → ice blue → amber → red at about 0 VU → magenta → purple when pinned at +3. **Neon** runs cyan → violet → hot magenta. **Amber** runs dim ember → gold → white-hot. It follows the louder needle. |
 | **LIGHT**: CYCLE, with **RATE** 1 / 2 / 4 / 8 BARS | 15, 9 | Travels once round the colour wheel per RATE (default 2 bars), in 120 fine steps (3° each), so even an 8-bar cycle drifts smoothly. While the song plays it locks to the song position, so the same colour lands on the same beat of every phrase, in any tempo and time signature. Pressing Play glides it onto the beat. Stopped, it keeps cycling at the project tempo. |

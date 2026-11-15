@@ -148,7 +148,7 @@ def ornament(bg):
     del d
 
 
-def card(bg, rect, title=None):
+def card(bg, rect, title=None, unit=None):
     x, y, w, h = rect
     bg.alpha_composite(glow_rect(bg.size, rect, 16, L.NEON, 6, 4, 150))
     paste(bg, vgrad(w, h, (26, 26, 44), (16, 16, 30)), rr_mask(w, h, (0, 0, w, h), 16), (x, y))
@@ -156,6 +156,9 @@ def card(bg, rect, title=None):
     if title:
         img = text_image(title, 23, L.AMBER_TEXT + (255,), tracking=0.04)
         bg.alpha_composite(img, (x + 22 if w > 140 else x + (w - img.size[0]) // 2, y + 16))
+    if unit:
+        img = text_image(unit, 15, (190, 170, 150, 255), tracking=0.16)
+        bg.alpha_composite(img, (x + w - 22 - img.size[0], y + 23))
 
 
 def make_background():
@@ -185,8 +188,6 @@ def make_background():
     for x0, x1 in ((290, 480),):
         rd.line([(x0, 421), (x1, 421)], fill=L.BRASS + (200,), width=2)
     bg.alpha_composite(rail)
-
-    card(bg, L.card_rect('peak'), L.CARD_TITLES['peak'])
     return bg
 
 
@@ -203,7 +204,7 @@ def make_setup_background():
     bg.alpha_composite(grid)
     ornament(bg)
     for key, r in L.SETUP_CARDS.items():
-        card(bg, r, L.SETUP_TITLES[key])
+        card(bg, r, L.SETUP_TITLES[key], L.SETUP_UNITS.get(key))
     lx, ly, lw, lh = L.SETUP_CARDS['light']
     rules = Image.new('RGBA', bg.size, (0, 0, 0, 0))
     rd = ImageDraw.Draw(rules)
@@ -639,16 +640,15 @@ def make_controls():
         save(button(w, h, label, style, True, size), name + '_on.png')
         save(button(w, h, label, style, False, size), name + '_off.png')
     for i, lab in enumerate(L.REF_LABELS):
-        pair('cal_%d' % i, L.CAL_BUTTONS[i], lab + ' dBFS', size=20)
+        pair('cal_%d' % i, L.CAL_BUTTONS[i], lab, size=21)
     _, _, w, h = L.PEAK_BUTTON
     save(button(w, h, 'ON', 'seg', True, 24), 'peak_on.png')
     save(button(w, h, 'OFF', 'seg', False, 24), 'peak_off.png')
     for i, lab in enumerate(('WARM', 'COOL', 'OFF', 'REACT', 'CYCLE')):
         style = {'REACT': 'react', 'CYCLE': 'cycle'}.get(lab, 'seg')
         pair('light_%d' % i, L.LIGHT_BUTTONS[i], lab, style, size=24 if style != 'seg' else 19)
-    pair('bypass', L.BYPASS_BUTTON, 'BYPASS', 'bypass', size=40)
     for i, lab in enumerate(L.CLIP_LABELS):
-        pair('clip_%d' % i, L.CLIP_BUTTONS[i], lab, size=18)
+        pair('clip_%d' % i, L.CLIP_BUTTONS[i], lab, size=21)
     for i, lab in enumerate(L.RATE_LABELS):
         pair('rate_%d' % i, L.RATE_BUTTONS[i], lab, size=19)
     for i, (lab, name) in enumerate(zip(L.PALETTE_LABELS, L.PALETTE_ORDER)):
@@ -815,12 +815,6 @@ def compose(bg, faces, mode, light_i, vus, cal=1, heat=0.0, clip=True, hue=0.0, 
         x, y, mw, mh = L.max_label_rect(w)
         t = text_image('MAX %+.1f VU' % vu, 17, L.INK + (255,), slant=0.0, semi=True)
         page.alpha_composite(t, (x + mw - t.size[0], y + (mh - t.size[1]) // 2))
-    def btn(name, rect, on):
-        img = Image.open(os.path.join(OUT, name + ('_on.png' if on else '_off.png')))
-        x, y, w, h = rect
-        page.alpha_composite(img, (x + (w - img.size[0]) // 2, y + (h - img.size[1]) // 2))
-    btn('peak', L.PEAK_BUTTON, True)
-    btn('bypass', L.BYPASS_BUTTON, False)
     screen = Image.new('RGBA', (L.W, 800), (34, 35, 44, 255))
     hdr = ImageDraw.Draw(screen)
     hdr.text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))
@@ -848,6 +842,7 @@ def setup_preview(sbg, clip=0, rate=1, pal=0, cal=1, light=3):
         btn('rate_%d' % i, r, i == rate)
     for i, r in enumerate(L.PALETTE_BUTTONS):
         btn('pal_%d' % i, r, i == pal)
+    btn('peak', L.PEAK_BUTTON, True)
     screen = Image.new('RGBA', (L.W, 800), (34, 35, 44, 255))
     ImageDraw.Draw(screen).text((40, 34), 'MPC host header (not part of the skin)', fill=(150, 150, 160, 255), font=font(26, True))
     screen.alpha_composite(page, (0, L.SCREEN_TOP))

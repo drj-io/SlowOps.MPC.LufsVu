@@ -10,14 +10,15 @@ METER tab:
     chosen by the plugin-computed View parameter
   * needle sector filmstrips (4 per needle), clip lamps + RESET CLIP tap areas, plate,
     PHASE meter, MAX readouts
-  * control strip: PEAK | BYPASS
+  * no on-screen controls (PEAK HOLD is on SETUP; BYPASS and TRIM on LUFS); Q-Link 15 = TRIM
 LUFS tab:
   * the same dials at 0.8 scale (shared needle and glow strips; caption-free faces), clip lamps
   * smoked-glass tuning strip: INTEGRATED | SHORT-TERM | TRUE PEAK MAX | GAIN REDUCTION
     Labels, plus AUTO status / auto gain / momentary / elapsed
     (CLEAR and RUN/HOLD sit at the strip's left end: they control the measurement)
   * GAIN card: AUTO | TARGET < > | TRIM knob;  OUTPUT card: LIMITER | CEILING < >;  BYPASS
-SETUP tab: CALIBRATION | CLIP LEVEL, then LIGHT (STATIC | REACT + palette | CYCLE + rate).
+SETUP tab: CALIBRATION | CLIP LEVEL | PEAK HOLD, then LIGHT (STATIC | REACT + palette | CYCLE + rate).
+Every adjustable control is a focus group (see focus_group): touch it, then turn the data wheel.
 The plugin is stereo only; the retired mono parameters have no widgets.
 """
 import json
@@ -66,6 +67,70 @@ def button(name, img, button_id, group, handle, r, only=None):
     return entry(name, 'Button', {'version': 2, 'onImage': img + '_on.png', 'offImage': img + '_off.png',
                                   'buttonId': button_id, 'numButtonsInGroup': group, 'handleName': handle,
                                   'gestureBehaviour': 'Instant'}, r, show='Hide', only=only)
+
+
+# Focusable controls. A tab-level widget cannot take the data wheel by itself; the SDK pattern is
+# a custom component whose "Data" handle is remapped to the parameter, with acceptsHWFocus Yes.
+# Touching it focuses it (amber ring), banks the Q-Links to it, and the data wheel turns it;
+# Enter opens the full-screen editor. Its widgets are the same ones, re-based to the group.
+DEFS = []
+FOCUS_PAD = 4
+
+
+def _shift(r, ox, oy):
+    x, y, w, h = [float(v) for v in r.split()]
+    return rect((x - ox, y - oy, w, h))
+
+
+def focus_group(name, param, children, overlay):
+    rects = [[float(v) for v in c['bounds']['bounds'].split()] for c in children]
+    x0 = max(0, min(r[0] for r in rects) - FOCUS_PAD)
+    y0 = max(0, min(r[1] for r in rects) - FOCUS_PAD)
+    x1 = min(L.W, max(r[0] + r[2] for r in rects) + FOCUS_PAD)
+    y1 = min(L.H, max(r[1] + r[3] for r in rects) + FOCUS_PAD)
+    ring = entry('focus', 'Focus', {'version': 1, 'backgroundColour': L.argb(L.AMBER, 0x22),
+                                    'outlineColour': L.argb(L.AMBER), 'backgroundInset': 0.0,
+                                    'outlineThickness': 2.0}, (0, 0, x1 - x0, y1 - y0))
+    ring['bounds']['whenVisible'] = 'WhenFocussed'
+    inner = [ring]
+    for c in children:
+        c['bounds']['bounds'] = _shift(c['bounds']['bounds'], x0, y0)
+        c['bounds']['acceptsHWFocus'] = 'No'
+        if c['componentData']['data'].get('handleName') == P(param):
+            c['componentData']['data']['handleName'] = 'Data'
+        inner.append(c)
+    acts = [{'version': 1, 'onAction': 'Mouse Down', 'handler': 'Q-Link', 'handleName': 'Data', 'additionalData': ''}]
+    if overlay.startswith('knob'):   # a double tap on a knob opens the editor too (not on a button: it would toggle)
+        acts.append({'version': 1, 'onAction': 'Double Click', 'handler': 'Show Overlay', 'handleName': 'Data',
+                     'additionalData': overlay})
+    acts.append({'version': 1, 'onAction': 'Enter Pressed', 'handler': 'Show Overlay', 'handleName': 'Data',
+                 'additionalData': overlay})
+    clear = {'version': 1, 'colour': '0', 'image': ''}
+    DEFS.append(('focus ' + name, {'version': 2, 'actions': acts,
+                                   'backgroundData': {'version': 1, 'focussed': clear, 'unfocussed': clear},
+                                   'ignoreMousePresses': False, 'disableCoarseDataWheel': False,
+                                   'componentsData': inner}))
+    e = entry(name, 'focus ' + name, {'version': 1, 'handleName': 'Data'}, (x0, y0, x1 - x0, y1 - y0),
+              show='Hide', focus='Yes')
+    e['handle remapping']['map'] = [{'key': 'Data', 'value': P(param)}]
+    return e
+
+
+def overlay_defs():
+    bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': ''}
+    lost = [{'version': 1, 'onAction': 'Focus Lost', 'handler': 'Focus Lost', 'handleName': 'Focus Lost', 'additionalData': ''}]
+    out = []
+    for name, data in (
+            ('knob overlay', {'version': 2, 'version_': 1, 'actions': lost, 'overlayType': 'Knob With Header',
+                              'scaleType': 'Linear', 'polarityType': 'Unipolar', 'showMinusSign': True, 'handleName': 'Data'}),
+            ('knob overlay bipolar', {'version': 2, 'version_': 1, 'actions': lost, 'overlayType': 'Knob With Header',
+                                      'scaleType': 'Linear', 'polarityType': 'Bipolar', 'showMinusSign': True, 'handleName': 'Data'}),
+            ('menu overlay', {'version': 1, 'version_': 1, 'actions': lost, 'withNumbers': False, 'handleName': 'Data'})):
+        kind = 'MenuOverlay' if name.startswith('menu') else 'KnobOverlay'
+        child = entry('overlay', kind, data, (0, 0, 1280, 800))
+        out.append((name, {'version': 2, 'actions': [], 'backgroundData': {'version': 1, 'focussed': bg, 'unfocussed': bg},
+                           'ignoreMousePresses': True, 'disableCoarseDataWheel': False, 'componentsData': [child]}))
+    return out
 
 
 def when(name, choice, count):
@@ -125,12 +190,11 @@ def main():
         comps.append(button(name.lower() + ' reset', 'hit', 1, 1, P('Reset Clip'), L.lamp_hit_rect((x, y), side)))
 
     # reference plate
-    for i in range(3):
-        comps.append(image('plate %d' % i, 'plate_%d.png' % i, L.PLATE, only=when('0 VU', i, 3)))
+    for i in range(len(L.REF_LABELS)):
+        comps.append(image('plate %d' % i, 'plate_%d.png' % i, L.PLATE, only=when('0 VU', i, len(L.REF_LABELS))))
 
     # control strip: PEAK | BYPASS (TRIM is on the LUFS tab)
-    comps.append(button('peak', 'peak', 1, 1, P('Peak Hold'), L.PEAK_BUTTON))
-    comps.append(button('bypass', 'bypass', 1, 1, P('Bypass'), L.BYPASS_BUTTON))
+
 
     # phase correlation
     comps.append(filmstrip('phase', 'corr.png', L.CORR_STEPS + 1, P('Correlation'), L.CORR))
@@ -181,21 +245,26 @@ def main():
     lufs.append(label('elapsed', 'Elapsed', L.ELAPSED_RECT, L.label_px(16), L.STATUS_AMBER, 'left'))
     # measurement controls, at the left end of the readout strip
     lufs.append(button('clear', 'clear', 1, 1, P('Clear'), L.CLEAR_BUTTON))
-    lufs.append(button('run hold', 'hold', 1, 1, P('Measure'), L.HOLD_BUTTON))
+    lufs.append(focus_group('run hold', 'Measure', [button('run hold', 'hold', 1, 1, P('Measure'), L.HOLD_BUTTON)], 'menu overlay'))
     # controls
     # GAIN card (AUTO | TARGET | TRIM) and OUTPUT card (LIMITER | CEILING)
-    lufs.append(button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('gain')))
-    lufs.append(button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('output')))
-    lufs.append(button('lufs bypass', 'bypass_lufs', 1, 1, P('Bypass'), L.LUFS_BYPASS))   # the one global Bypass
+    lufs.append(focus_group('lufs auto', 'LUFS Auto', [button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('gain'))], 'menu overlay'))
+    lufs.append(focus_group('limiter', 'Limiter', [button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('output'))], 'menu overlay'))
+    lufs.append(focus_group('lufs bypass', 'Bypass', [button('lufs bypass', 'bypass_lufs', 1, 1, P('Bypass'), L.LUFS_BYPASS)],
+                            'menu overlay'))   # the one global Bypass
     for card, value, down, up in (('gain', 'Target', 'Target Down', 'Target Up'), ('output', 'Ceiling', 'Ceiling Down', 'Ceiling Up')):
+        # the arrows and the value pill are one focus group: touching any of them puts TARGET / CEILING on the wheel
         lft, pill, rgt = L.lufs_stepper(card)
-        lufs.append(button(down.lower(), 'arrow_l', 1, 1, P(down), lft))
-        lufs.append(label(value.lower() + ' value', value, pill, L.label_px(24), L.CREAM, 'horizontallyCentred'))
-        lufs.append(button(up.lower(), 'arrow_r', 1, 1, P(up), rgt))
-    lufs.append(entry('lufs trim knob', 'Knob', {'version': 3, 'knobType': 'FilmStrip', 'filmStrip': 'knob_trim.png',
-                                                 'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
-                                                 'handleName': P('Trim')}, L.LUFS_KNOB, show='Hide', focus='Yes'))
-    lufs.append(label('lufs trim value', 'Trim', L.LUFS_TRIM_VALUE, L.label_px(26), L.CREAM, 'horizontallyCentred'))
+        lufs.append(focus_group(value.lower(), value, [
+            button(down.lower(), 'arrow_l', 1, 1, P(down), lft),
+            label(value.lower() + ' value', value, pill, L.label_px(24), L.CREAM, 'horizontallyCentred'),
+            button(up.lower(), 'arrow_r', 1, 1, P(up), rgt)], 'knob overlay'))
+    lufs.append(focus_group('lufs trim', 'Trim', [
+        entry('lufs trim knob', 'Knob', {'version': 3, 'knobType': 'FilmStrip', 'filmStrip': 'knob_trim.png',
+                                         'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
+                                         'handleName': P('Trim')}, L.LUFS_KNOB, show='Hide'),
+        label('lufs trim value', 'Trim', L.LUFS_TRIM_VALUE, L.label_px(26), L.CREAM, 'horizontallyCentred')],
+        'knob overlay bipolar'))
 
     def make_tab(name, key, bgimg, children):
         bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': bgimg}
@@ -208,16 +277,14 @@ def main():
 
     # SETUP tab: CALIBRATION | CLIP LEVEL, then the LIGHT box (STATIC | REACT + palette | CYCLE + rate)
     setup = []
-    for i, r in enumerate(L.CAL_BUTTONS):
-        setup.append(button('cal %d' % i, 'cal_%d' % i, i, len(L.CAL_BUTTONS), P('0 VU'), r))
-    for i, r in enumerate(L.LIGHT_BUTTONS):
-        setup.append(button('light %d' % i, 'light_%d' % i, i, len(L.LIGHT_BUTTONS), P('Light'), r))
-    for i, r in enumerate(L.CLIP_BUTTONS):
-        setup.append(button('clip level %d' % i, 'clip_%d' % i, i, len(L.CLIP_BUTTONS), P('Clip Level'), r))
-    for i, r in enumerate(L.RATE_BUTTONS):
-        setup.append(button('cycle rate %d' % i, 'rate_%d' % i, i, len(L.RATE_BUTTONS), P('Cycle Rate'), r))
-    for i, r in enumerate(L.PALETTE_BUTTONS):
-        setup.append(button('palette %d' % i, 'pal_%d' % i, i, len(L.PALETTE_BUTTONS), P('Palette'), r))
+    # each choice row is one focus group: touch any of its buttons, then turn the wheel through the choices
+    for name, param, prefix, rects in (('cal', '0 VU', 'cal_', L.CAL_BUTTONS), ('light', 'Light', 'light_', L.LIGHT_BUTTONS),
+                                       ('clip level', 'Clip Level', 'clip_', L.CLIP_BUTTONS),
+                                       ('cycle rate', 'Cycle Rate', 'rate_', L.RATE_BUTTONS),
+                                       ('palette', 'Palette', 'pal_', L.PALETTE_BUTTONS)):
+        setup.append(focus_group(name, param, [button('%s %d' % (name, i), '%s%d' % (prefix, i), i, len(rects), P(param), r)
+                                               for i, r in enumerate(rects)], 'menu overlay'))
+    setup.append(focus_group('peak', 'Peak Hold', [button('peak', 'peak', 1, 1, P('Peak Hold'), L.PEAK_BUTTON)], 'menu overlay'))
 
     tabs = [make_tab('METER', 0, 'bg.png', comps), make_tab('LUFS', 1, 'bg_lufs.png', lufs),
             make_tab('SETUP', 2, 'bg_setup.png', setup)]
@@ -231,17 +298,19 @@ def main():
         reps.append({'key': P(name), 'value': p['choices']})
 
     tui = {'pageData': {'version': 1,
-                        'componentDefinitions': {'version': 2, 'importFiles': [], 'localComponentDefinitions': []},
+                        'componentDefinitions': {'version': 2, 'importFiles': [], 'localComponentDefinitions':
+                                                 [{'key': k, 'value': v} for k, v in DEFS + overlay_defs()]},
                         'replacementStrings': reps,
                         'info': {'version': 1, 'type': 'CompleteDescription'},
                         'tabs': tabs}}
 
     # Q-Links: top row follows the strip left to right; read-only displays and the trigger stay unassigned.
+    # METER has no on-screen controls; TRIM keeps a knob there (Q-Link 15, as on the LUFS tab).
     q = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for ql, name in ((13, 'Peak Hold'), (14, 'Bypass')):
+    for ql, name in ((15, 'Trim'),):
         q['Q-Link %d' % ql] = IDX[name]
     q2 = {'Q-Link %d' % i: -1 for i in range(1, 17)}
-    for ql, name in ((13, '0 VU'), (14, 'Clip Level'), (15, 'Light'), (16, 'Palette'), (9, 'Cycle Rate')):
+    for ql, name in ((13, '0 VU'), (14, 'Clip Level'), (15, 'Light'), (16, 'Palette'), (9, 'Cycle Rate'), (10, 'Peak Hold')):
         q2['Q-Link %d' % ql] = IDX[name]
     q3 = {'Q-Link %d' % i: -1 for i in range(1, 17)}   # LUFS tab (q2 is SETUP, now the third tab)
     for ql, name in ((13, 'Target'), (14, 'Ceiling'), (15, 'Trim'), (16, 'LUFS Auto'), (9, 'Limiter'), (10, 'Measure'),
@@ -260,7 +329,9 @@ def main():
 
     os.makedirs(L.SKINS, exist_ok=True)
     with open(os.path.join(L.SKINS, 'TUI.json'), 'w') as f:
-        json.dump(tui, f, indent=1)
+        # overlay data starts with two "version" keys (its own, then the overlay base's); a dict
+        # cannot hold both, so the second is written as version_ and renamed here
+        f.write(json.dumps(tui, indent=1).replace('"version_": 1', '"version": 1'))
     with open(os.path.join(L.SKINS, 'Q-Links.json'), 'w') as f:
         json.dump(qlinks, f, indent=1)
     print('gen_skins: %d widgets on METER, %d on LUFS, %d on SETUP' % (len(comps), len(lufs), len(setup)))

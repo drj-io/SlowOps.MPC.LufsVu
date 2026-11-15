@@ -129,7 +129,7 @@ def glow_frame_colour(f):
     return FLASH_COLOUR, 1.0
 MODE_ORDER = ['stereo', 'mono']                # matches the plugin's Mode choices
 NUM_VIEWS = 10                                 # View = mode * 5 + light
-REF_LABELS = ['−20', '−18', '−14']  # matches the plugin's 0 VU choices
+REF_LABELS = ['−20', '−18', '−14', '−10', '−4']  # matches the plugin's 0 VU choices
 
 
 def argb(rgb, a=255):
@@ -141,21 +141,7 @@ ORNAMENT = (0, 0, W, 56)
 CABINET = (16, 58, 1248, 394)                  # walnut cabinet with neon edge
 CABINET_INNER = (30, 70, 1220, 368)            # region covered by the per-view face images (height divisible by 4)
 
-STRIP_Y, STRIP_H = 466, 150                    # METER control strip: PEAK | BYPASS | OUTPUT
-CARDS = {                                      # x, width (12 px gaps, 16 px page margins)
-    'peak':   (16, 400),
-    'bypass': (428, 836),
-}
-CARD_TITLES = {'peak': 'PEAK'}                 # (TRIM lives on the LUFS tab)
-
-
-def card_rect(name):
-    x, w = CARDS[name]
-    return (x, STRIP_Y, w, STRIP_H)
-
-
-PEAK_BUTTON = (CARDS['peak'][0] + (CARDS['peak'][1] - 150) // 2, STRIP_Y + 64, 150, 56)
-BYPASS_BUTTON = (CARDS['bypass'][0], STRIP_Y, CARDS['bypass'][1], STRIP_H)
+# METER has no control strip: PEAK HOLD lives on SETUP, BYPASS and TRIM on the LUFS tab.
 KNOB_SIZE = 76
 CORR = (800, 401, 190, 38)                                             # phase correlation strip (bottom rail)
 CORR_STEPS = 21                                                        # must match the plugin (0 = no signal)
@@ -171,11 +157,13 @@ def max_label_rect(window):
 # Row 1: CALIBRATION | CLIP LEVEL.  Row 2: one LIGHT box with three grouped columns:
 #   STATIC (warm / cool / off) | REACT + its palette | CYCLE + its rate
 SETUP_CARDS = {                                  # x, y, w, h
-    'cal':   (16, 70, 612, 150),
-    'clip':  (652, 70, 612, 150),
+    'cal':   (16, 70, 504, 150),
+    'clip':  (536, 70, 408, 150),
+    'peak':  (960, 70, 304, 150),
     'light': (16, 240, 1248, 372),
 }
-SETUP_TITLES = {'cal': 'CALIBRATION', 'clip': 'CLIP LEVEL', 'light': 'LIGHT'}
+SETUP_TITLES = {'cal': 'CALIBRATION', 'clip': 'CLIP LEVEL', 'peak': 'PEAK HOLD', 'light': 'LIGHT'}
+SETUP_UNITS = {'cal': '0 VU IN dBFS', 'clip': 'dBFS'}   # small caption at the card's top right
 LIGHT_COLUMNS = {                                # x, width inside the LIGHT box
     'static': (40, 340),
     'react':  (412, 400),
@@ -204,7 +192,7 @@ def light_col(key):
     return SETUP_CARDS['light'][0] + x, w
 
 
-CAL_BUTTONS = setup_buttons('cal', 3)
+CAL_BUTTONS = setup_buttons('cal', len(REF_LABELS))
 CLIP_BUTTONS = setup_buttons('clip', 4)
 # Light buttons in Light-choice order: Warm, Cool, Off (STATIC column), React, Cycle.
 LIGHT_BUTTONS = row_buttons(*light_col('static'), LIGHT_BTN_Y, 3) + \
@@ -212,7 +200,8 @@ LIGHT_BUTTONS = row_buttons(*light_col('static'), LIGHT_BTN_Y, 3) + \
      (light_col('cycle')[0], LIGHT_BTN_Y, light_col('cycle')[1], 52)]
 PALETTE_BUTTONS = row_buttons(*light_col('react'), LIGHT_SUB_Y, 3)
 RATE_BUTTONS = row_buttons(*light_col('cycle'), LIGHT_SUB_Y, 4)
-CLIP_LABELS = ['0 dBFS', '\u22120.3 dBFS', '\u22121 dBFS', '\u22123 dBFS']
+CLIP_LABELS = ['0', '\u22120.3', '\u22121', '\u22123']     # dBFS (the unit is on the card)
+PEAK_BUTTON = (SETUP_CARDS['peak'][0] + (SETUP_CARDS['peak'][2] - 150) // 2, SETUP_CARDS['peak'][1] + 72, 150, 52)
 RATE_LABELS = ['1 BAR', '2 BARS', '4 BARS', '8 BARS']
 PALETTE_LABELS = ['THERMAL', 'NEON', 'AMBER']
 

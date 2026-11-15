@@ -7,14 +7,15 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 - **AUTO loudness** (off by default): gently steers the programme's integrated loudness towards a TARGET (−23 … −9 LUFS, default −14). It moves at most 0.5 dB/s, holds during silence and is limited to ±12 dB. It is a best-effort live estimate, not a guarantee.
 - **True-peak LIMITER** (off by default) with a CEILING of −6.0 … −0.1 dBTP (default −1.0). It is stereo-linked with a 3 ms look-ahead, which adds about 3.2 ms of latency **only while it is on**; the latency is reported to the MPC.
 - **Ballistics**: full-wave average-responding with second-order needle dynamics aimed at IEC 60268-17. The design target is 99 % in 300 ms with 1.3 % overshoot, verified in `core_tests`.
-- **Calibration**: 0 VU = −20 / −18 / −14 dBFS. The reference is a 1 kHz sine whose *peak* is at that level.
+- **Calibration**: 0 VU = −20 / −18 / −14 / −10 / −4 dBFS (−10 and −4 for loud, dense masters). The reference is a 1 kHz sine whose *peak* is at that level.
 - **CLIP lamps**: sample-peak at a selectable CLIP LEVEL, with an optional 2 s hold. Tap a lamp to reset it. This is not true-peak detection.
 - **LIGHT**: Warm, Cool, Off, **React** or **Cycle**.
   - **React** makes the dials glow blue → red → purple as the program heats up, with filament-like warm-up and cool-down. ![react](docs/images/react.gif)
   - **Cycle** sweeps round the hue wheel once every two bars, locked to the MPC's tempo and song position. ![cycle](docs/images/cycle.gif)
 - **PHASE** correlation meter, **MAX** VU readouts, and a selectable **CLIP LEVEL** (0 / −0.3 / −1 / −3 dBFS).
-- **Three tabs.** METER has the dials, PHASE, MAX, CLIP lamps, PEAK and BYPASS. LUFS has the loudness readouts and the AUTO, TARGET, TRIM, LIMITER, CEILING, CLEAR, RUN/HOLD and BYPASS controls. SETUP has CALIBRATION, CLIP LEVEL and a LIGHT box grouped as STATIC (warm/cool/off), REACT with its palette, and CYCLE with its rate.
-- **Output TRIM** (±12 dB, smoothed; on the LUFS tab) and **BYPASS** (on both tabs, one setting). With TRIM at 0.0 dB (and AUTO off), or with Bypass on, the output is a **bit-exact** copy of the input. Every meter reads the output signal.
+- **Three tabs.** METER has only the meters: the dials, PHASE, MAX and CLIP lamps. LUFS has the loudness readouts and the AUTO, TARGET, TRIM, LIMITER, CEILING, CLEAR, RUN/HOLD and BYPASS controls. SETUP has CALIBRATION, CLIP LEVEL, PEAK HOLD and a LIGHT box grouped as STATIC (warm/cool/off), REACT with its palette, and CYCLE with its rate.
+- **Data wheel**: touch any control and turn the MPC's main data wheel to change it (an amber ring shows the focus); press it for the large editor. TRIM is also on Q-Link 15 on both the METER and LUFS tabs.
+- **Output TRIM** (±12 dB, smoothed; on the LUFS tab) and **BYPASS** (on the LUFS tab). With TRIM at 0.0 dB (and AUTO off), or with Bypass on, the output is a **bit-exact** copy of the input. Every meter reads the output signal.
 
 | METER | LUFS | SETUP |
 |---|---|---|

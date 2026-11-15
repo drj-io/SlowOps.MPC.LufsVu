@@ -30,6 +30,7 @@ enum P { kReserved = 0, kMode, kRef, kPeak, kLight, kBypass, kTrim, kResetClip,
 // Glow frames: 3 palettes x 16 heat steps, then 120 hue steps, then the flash frame.
 static constexpr int kHues = 120, kHueFirst = 48, kFlash = kHueFirst + kHues, kGlowMax = kFlash;
 static float light(int i) { return (float)i / 4.0f; }   // Warm, Cool, Off, React, Cycle
+static float ref(int i) { return (float)i / 4.0f; }     // 0 VU = -20, -18, -14, -10, -4 dBFS
 static long viewOf(float v) { return std::lround(v * 9); }
 // Pseudo-indices for the needle decoder.
 enum Needle { kNeedleL = 0, kNeedleR, kNeedleM };
@@ -225,6 +226,20 @@ static void meters()
         CHECK(std::abs(p.frame(kNeedleL) - vuFrame(2.0)) <= 1, "ref -20: reads +2 VU (frame %d, expect %d)", p.frame(kNeedleL), vuFrame(2.0));
     }
     {
+        // dense masters: 0 VU = -10 and -4 dBFS
+        Plug p; p.input = sine(p.sr, -10.0);
+        p.set(kRef, ref(3));
+        p.runFor(2.0);
+        CHECK(std::abs(p.frame(kNeedleL) - vuFrame(0.0)) <= 1, "-10 dBFS sine at ref -10 reads 0 VU (frame %d)", p.frame(kNeedleL));
+        CHECK(p.text(kRef) == "-10 dBFS", "ref text \"%s\"", p.text(kRef).c_str());
+        p.input = sine(p.sr, -6.0);
+        p.set(kRef, ref(4));
+        p.runFor(2.0);
+        CHECK(std::abs(p.frame(kNeedleL) - vuFrame(-2.0)) <= 1, "-6 dBFS sine at ref -4 reads -2 VU (frame %d, expect %d)",
+              p.frame(kNeedleL), vuFrame(-2.0));
+        CHECK(p.text(kRef) == "-4 dBFS", "ref text \"%s\"", p.text(kRef).c_str());
+    }
+    {
         Plug p; p.input = sine(p.sr, -18.0, -1.0);      // anti-phase
         p.runFor(1.5);
         CHECK(std::abs(p.frame(kNeedleL) - vuFrame(0.0)) <= 1, "anti-phase, STEREO: L at 0 VU");
@@ -300,14 +315,14 @@ static void state()
 {
     std::printf("Save / reload\n");
     Plug a; a.input = sine(a.sr, -6.0);
-    a.set(kRef, 1.0f); a.set(kPeak, 0.0f); a.set(kLight, light(1)); a.set(kTrim, 0.75f);
+    a.set(kRef, ref(3)); a.set(kPeak, 0.0f); a.set(kLight, light(1)); a.set(kTrim, 0.75f);
     a.runFor(1.0);
     a.set(kResetClip, 1.0f);                       // saved in the "on" position: must not fire on load
     auto chunk = a.save();
     Plug b; b.load(chunk);
     b.input = [](int64_t, float& l, float& r) { l = r = 0.0f; };
     b.runFor(0.1);
-    CHECK(b.get(kRef) == 1.0f && b.get(kPeak) == 0.0f && std::lround(b.get(kLight) * 4) == 1 &&
+    CHECK(b.get(kRef) == ref(3) && b.get(kPeak) == 0.0f && std::lround(b.get(kLight) * 4) == 1 &&
           b.text(kTrim) == "+6.0 dB", "ref/peak/light/trim restored (trim \"%s\")", b.text(kTrim).c_str());
     CHECK(viewOf(b.get(kView)) == 1, "view = Cool (%ld)", viewOf(b.get(kView)));
     CHECK(b.get(kResetClip) < 0.5f, "a saved reset trigger is cleared, not fired as a setting");
@@ -590,7 +605,7 @@ static void instances()
 {
     std::printf("Multiple instances\n");
     Plug a, b;
-    a.set(kLight, light(3)); b.set(kRef, 2.0f);
+    a.set(kLight, light(3)); b.set(kRef, ref(2));
     a.input = sine(a.sr, -18.0); b.input = sine(b.sr, -18.0, 1.0, 440.0);
     for (int i = 0; i < 60; ++i) { a.block(512); b.block(512); }
     CHECK(viewOf(a.get(kView)) == 3 && viewOf(b.get(kView)) == 0, "lights independent");
