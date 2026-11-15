@@ -1,4 +1,4 @@
-"""Shared geometry and palette for the VU Meter skin.
+"""Shared geometry and palette for the LUFS VU skin.
 
 Imported by make_skin_art.py (Pillow artwork) and gen_skins.py (TUI.json / Q-Links.json),
 so every rectangle, pivot and tick angle is defined exactly once.

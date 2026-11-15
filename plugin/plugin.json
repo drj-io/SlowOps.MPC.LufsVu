@@ -1,5 +1,5 @@
 {
-  "name": "VU Meter",
+  "name": "LUFS VU",
   "manufacturer": "Slow Ops",
   "version": "0.3.0",
   "format": "vst2",
@@ -8,8 +8,8 @@
   "numInputs": 2,
   "numOutputs": 2,
   "category": "Effect",
-  "file32": "VST/slow-ops-vu-meter-arm32.so",
-  "file64": "VST/slow-ops-vu-meter-arm64.so",
+  "file32": "VST/slow-ops-lufs-vu-arm32.so",
+  "file64": "VST/slow-ops-lufs-vu-arm64.so",
   "description": "Analog-style stereo VU meters plus an EBU R 128 LUFS tab (integrated, short-term, momentary, true peak), optional AUTO loudness and a true-peak limiter. With processing off the audio passes through unchanged.",
   "author": "Slow Ops",
   "license": "MIT"

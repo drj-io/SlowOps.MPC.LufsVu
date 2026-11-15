@@ -1,4 +1,6 @@
-# Slow Ops VU Meter (MPC)
+# Slow Ops LUFS VU (MPC)
+
+(Called "VU Meter" before v0.3.)
 
 An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 
@@ -38,18 +40,18 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 ```sh
 git submodule update --init           # SDK pinned at febd2ca
 ./scripts/test.sh                     # native + arm32 + arm64, validation, all tests (+ FFmpeg cross-check if installed)
-./scripts/package.sh                  # dist/vu-meter-<version>-mpc.zip
+./scripts/package.sh                  # dist/lufs-vu-<version>-mpc.zip
 MPC_ADDRESS=<ip> ./scripts/deploy.sh  # install over the network (developer mode) and restart
 ./scripts/make_art.sh                 # redraw skin PNGs + previews (creates build/venv with Pillow)
 ```
 
-The output folder is `plugin/build/Slow Ops - VST - VU Meter/`.
+The output folder is `plugin/build/Slow Ops - VST - LUFS VU/`.
 
 ## Install on the MPC
 
-1. Copy `Slow Ops - VST - VU Meter` into a `VST2 Plugins` folder at the top level of a drive.
+1. Copy `Slow Ops - VST - LUFS VU` into a `VST2 Plugins` folder at the top level of a drive.
 2. On MPC OS 3.10.1 or later, go to **Preferences → Enhancements (Beta)** and turn on **Enable Enhancements** and **External Plugin Support**. Restart.
-3. Add **Slow Ops › VU Meter** as an insert effect. The MPC only rereads skins on restart.
+3. Add **Slow Ops › LUFS VU** as an insert effect. The MPC only rereads skins on restart.
 
 ## Layout
 

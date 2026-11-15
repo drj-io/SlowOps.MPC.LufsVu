@@ -19,4 +19,4 @@ c++ -std=c++17 -O2 -Wall -Wextra -I core/include tests/core_tests.cpp -o build/c
 c++ -std=c++17 -O2 -Wall -I "$SDK/framework" tests/scenario_host.cpp -o build/scenario_host
 c++ -std=c++17 -O2 -Wall -I core/include tests/lufs_crosscheck.cpp -o build/lufs_crosscheck
 echo
-echo "MPC folder: $ROOT/plugin/build/Slow Ops - VST - VU Meter"
+echo "MPC folder: $ROOT/plugin/build/Slow Ops - VST - LUFS VU"

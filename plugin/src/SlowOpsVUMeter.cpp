@@ -1,4 +1,4 @@
-// Slow Ops VU Meter: thin mpc::Plugin adapter around the slowops::vumeter core.
+// Slow Ops LUFS VU (formerly "VU Meter"): thin mpc::Plugin adapter around the slowops::vumeter core.
 //
 // Audio (every stage is optional; with AUTO off, TRIM 0.0 dB and LIMITER off the output is a
 // bit-exact copy of the input with zero latency):
@@ -194,7 +194,7 @@ public:
     static mpc::PluginInfo makeInfo()
     {
         mpc::PluginInfo info;
-        info.name = "VU Meter";
+        info.name = "LUFS VU";              // renamed from "VU Meter" in v0.3 (uid and parameter ids unchanged)
         info.vendor = "Slow Ops";
         info.uniqueId = MPC_FOURCC('S', 'o', 'V', 'M');
         info.version = 300;            // 0.3.0

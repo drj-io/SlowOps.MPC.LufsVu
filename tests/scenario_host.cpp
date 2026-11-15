@@ -1,8 +1,8 @@
-// scenario_host.cpp - drives the real native VU Meter build through the VST2 ABI (like the MPC)
+// scenario_host.cpp - drives the real native LUFS VU build through the VST2 ABI (like the MPC)
 // and checks the spec's integration requirements (section 8.2).
 //
 // Build: c++ -std=c++17 -O2 -I third_party/mpc-plugin-builder-sdk/framework tests/scenario_host.cpp -o build/scenario_host
-// Run:   build/scenario_host plugin/build/native/vu-meter.dylib [out_dir]
+// Run:   build/scenario_host plugin/build/native/lufs-vu.dylib [out_dir]
 #include "mpc_vst2_abi.h"
 
 #include <dlfcn.h>

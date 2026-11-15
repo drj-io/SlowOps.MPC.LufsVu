@@ -1,4 +1,4 @@
-// Core engine tests for the Slow Ops VU Meter (no SDK dependency).
+// Core engine tests for the Slow Ops LUFS VU (no SDK dependency).
 // Implements the pass/fail table of the spec, section 8.1, plus trim/bypass checks.
 #include "slowops/vumeter/VuEngine.hpp"
 #include "slowops/vumeter/Heat.hpp"

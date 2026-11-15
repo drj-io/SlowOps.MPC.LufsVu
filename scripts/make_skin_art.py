@@ -1,4 +1,4 @@
-"""Draw every PNG of the VU Meter skin (needs Pillow).
+"""Draw every PNG of the LUFS VU skin (needs Pillow).
 
     python3 -m venv build/venv && build/venv/bin/pip install pillow
     build/venv/bin/python scripts/make_skin_art.py

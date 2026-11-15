@@ -4,7 +4,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SDK="$ROOT/third_party/mpc-plugin-builder-sdk"
-LIB="$ROOT/plugin/build/native/vu-meter.dylib"
+LIB="$ROOT/plugin/build/native/lufs-vu.dylib"
 [ "$(uname)" = "Darwin" ] || LIB="${LIB%.dylib}.so"
 cd "$ROOT"
 "$ROOT/scripts/build.sh" "$@"
