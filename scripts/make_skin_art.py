@@ -535,6 +535,18 @@ def needle_frame(dial, angle, box):
     return img
 
 
+def make_lufs_needles(dial):
+    """Needle strips for the LUFS tab: every METER frame rendered, then resized to 0.8."""
+    per = dial.frames // dial.sectors
+    for k in range(dial.sectors):
+        box = L.sector_box(dial, k)
+        _, _, w, h = L.lufs_needle_rect(dial, k)
+        strip = Image.new('RGBA', (w, h * (per + 1)), (0, 0, 0, 0))
+        for j, f in enumerate(L.sector_frames(dial, k)):
+            strip.alpha_composite(needle_frame(dial, dial.angle_for_frame(f), box).resize((w, h), Image.LANCZOS), (0, (j + 1) * h))
+        save(strip, L.lufs_needle_file(k))
+
+
 def make_needles(kind, dial):
     per = dial.frames // dial.sectors
     for k in range(dial.sectors):
@@ -860,18 +872,16 @@ def lufs_preview(lbg, faces, light_i=0, hue=0.0, out='preview-lufs.png', limiter
         gw, gh = glow.size[0], glow.size[1] // L.GLOW_FRAMES
         page.alpha_composite(glow.crop((0, step * gh, gw, (step + 1) * gh)).resize((fw, fh), Image.BILINEAR), (fx, fy))
         light = 'glow'
-    page.alpha_composite(faces[('lufs', light)].resize((fw, fh), Image.LANCZOS), (fx, fy))
+    page.alpha_composite(faces[('lufs', light)], (fx, fy))
     for i, vu in enumerate((-1.5, -2.6)):
         dial = L.stereo_dial(i)
         f = round(L.fraction(vu) * (dial.frames - 1))
         per = dial.frames // dial.sectors
         k = min(f // per, dial.sectors - 1)
-        x0, y0, bw, bh = L.sector_box(dial, k)
-        strip = Image.open(os.path.join(OUT, L.needle_file('s', k)))
-        fr = strip.crop((0, (f - k * per + 1) * bh, bw, (f - k * per + 2) * bh))
-        r = L.lufs_rect((dial.window[0] + x0, dial.window[1] + y0, bw, bh))
-        page.alpha_composite(fr.resize(r[2:], Image.LANCZOS), r[:2])
-        mx, my, mw, mh = L.lufs_rect(L.max_label_rect(L.STEREO_WINDOWS[i]))
+        r = L.lufs_needle_rect(dial, k)
+        strip = Image.open(os.path.join(OUT, L.lufs_needle_file(k)))
+        page.alpha_composite(strip.crop((0, (f - k * per + 1) * r[3], r[2], (f - k * per + 2) * r[3])), r[:2])
+        mx, my, mw, mh = L.lufs_max_rect(L.STEREO_WINDOWS[i])
         t = text_image('MAX %+.1f VU' % (vu + 2.1), 14, L.INK + (255,), slant=0.0, semi=True)
         page.alpha_composite(t, (mx + mw - t.size[0], my + (mh - t.size[1]) // 2))
     lamp = Image.open(os.path.join(OUT, 'lamp.png'))
@@ -962,9 +972,9 @@ def main():
             print('face', mode, light)
             faces[(mode, light)] = make_face(mode, light)
             save(faces[(mode, light)], 'face_%s_%s.png' % (mode, light))
-            faces[('lufs', light)] = make_face(mode, light, captions=False)
+            faces[('lufs', light)] = make_face(mode, light, captions=False).resize(L.LUFS_FACE[2:], Image.LANCZOS)
             save(faces[('lufs', light)], 'face_lufs_%s.png' % light)
-    print('needles'); make_needles('s', L.stereo_dial(0))
+    print('needles'); make_needles('s', L.stereo_dial(0)); make_lufs_needles(L.stereo_dial(0))
     print('controls'); make_controls()
     print('glow strips'); make_glow()
     preview(bg, faces, 'stereo', 0, (0.0, -3.0), out='preview-stereo.png')

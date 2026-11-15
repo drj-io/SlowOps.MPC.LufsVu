@@ -394,10 +394,35 @@ def lamp_hit_rect(lamp_xy, side):
 
 
 # ---------------------------------------------------------------------------- LUFS tab
-# Top: the METER tab's dials, reused at 0.8 scale (same needle strips and glow strip; the
-# faces are caption-free variants). Below them, inside the cabinet: one smoked-glass
+# Top: the METER tab's dials at 0.8 scale. On hardware the MPC does NOT shrink an image that is
+# larger than its bounds (it draws it at native size and crops it), so the LUFS faces and needle
+# strips are rendered at their final 0.8 size. Only the soft glow strip is scaled (up), as on METER.
+#
+# Labels: the MPC draws Label text at about 0.65 of the requested font height (measured on a
+# Live III), so requested sizes are divided by LABEL_SCALE to get the intended on-screen size. Below them, inside the cabinet: one smoked-glass
 # "radio tuning dial" strip with the four numeric readouts. Bottom: three control cards.
 LUFS_SCALE = 0.8
+LABEL_SCALE = 0.65
+
+
+def label_px(size):
+    """Font height to request for text that should look `size` px tall on the MPC."""
+    return round(size / LABEL_SCALE)
+
+
+def lufs_needle_rect(dial, k):
+    """LUFS-tab bounds (and native size) of needle sector k of a METER dial."""
+    x, y, w, h = sector_box(dial, k)
+    return lufs_rect((dial.window[0] + x, dial.window[1] + y, w, h))
+
+
+def lufs_needle_file(k):
+    return 'needle_l%d.png' % (k + 1)
+
+
+def lufs_max_rect(window):
+    x, y, w, h = lufs_rect(max_label_rect(window))
+    return (x - 30, y - 6, w + 30, h + 10)
 LUFS_CABINET = (16, 58, 1248, 414)
 LUFS_FACE = (152, 66, 976, 294)                # CABINET_INNER scaled by LUFS_SCALE
 
@@ -435,16 +460,16 @@ def readout_centre(i):
 def readout_value_rect(i):
     """Right-justified number; the unit is printed just right of it on the background."""
     cx = readout_centre(i)
-    return (int(cx - 152), DIAL_STRIP[1] + 28, 172, 50)
+    return (int(cx - 152), DIAL_STRIP[1] + 20, 172, 66)
 
 
 READOUT_UNIT_X = 30                            # unit starts this far right of the column centre
 STRIP_TICKS_Y = DIAL_STRIP[1] + 82             # decorative tuning scale
-STATUS_ROW_Y = DIAL_STRIP[1] + 92              # small Labels: AUTO status + gain | momentary | elapsed
-STATUS_RECT = (DIAL_STRIP[0] + 18, STATUS_ROW_Y, 196, 22)
-AUTO_GAIN_RECT = (DIAL_STRIP[0] + 218, STATUS_ROW_Y, 120, 22)
-MOMENTARY_RECT = (DIAL_STRIP[0] + 500, STATUS_ROW_Y, 200, 22)
-ELAPSED_RECT = (DIAL_STRIP[0] + DIAL_STRIP[2] - 18 - 220, STATUS_ROW_Y, 220, 22)
+STATUS_ROW_Y = DIAL_STRIP[1] + 89              # small Labels: AUTO status + gain | momentary | elapsed
+STATUS_RECT = (DIAL_STRIP[0] + 18, STATUS_ROW_Y, 196, 28)
+AUTO_GAIN_RECT = (DIAL_STRIP[0] + 218, STATUS_ROW_Y, 120, 28)
+MOMENTARY_RECT = (DIAL_STRIP[0] + 500, STATUS_ROW_Y, 200, 28)
+ELAPSED_RECT = (DIAL_STRIP[0] + DIAL_STRIP[2] - 18 - 220, STATUS_ROW_Y, 220, 28)
 
 LUFS_CARDS = {                                 # x, y, w, h
     'auto':    (16, 482, 440, 132),
@@ -468,6 +493,6 @@ def lufs_stepper(card):
 LUFS_TITLES = {'auto': ('AUTO', 'TARGET'), 'limiter': ('LIMITER', 'CEILING')}
 _tx, _ty = LUFS_CARDS['trim'][0], LUFS_CARDS['trim'][1]
 LUFS_KNOB = (_tx + 20, _ty + 28, KNOB_SIZE, KNOB_SIZE)
-LUFS_TRIM_VALUE = (_tx + 100, _ty + 44, 104, 44)
+LUFS_TRIM_VALUE = (_tx + 100, _ty + 42, 104, 48)
 CLEAR_BUTTON = (_tx + 208, _ty + 12, 124, 52)
 HOLD_BUTTON = (_tx + 208, _ty + 70, 124, 52)

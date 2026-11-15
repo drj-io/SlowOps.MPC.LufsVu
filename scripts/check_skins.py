@@ -101,9 +101,9 @@ def main():
                         fail('%s: %s height %d not divisible by %d frames' % (name, data['image'], size[1], nf))
                     else:
                         fw, fh = size[0], size[1] // nf
-                        # React glow strips are smooth gradients drawn at reduced size on purpose, and the
-                        # LUFS tab draws the METER dials at LUFS_SCALE.
-                        k = SCALED.get(data['image'], 1) * (L.LUFS_SCALE if name.startswith('lufs ') else 1)
+                        # React glow strips are smooth gradients drawn at reduced size and scaled UP on
+                        # purpose (the LUFS glow by 4 x 0.8). Nothing may rely on scaling an image down.
+                        k = SCALED.get(data['image'], 1) * (L.LUFS_SCALE if name == 'lufs glow' else 1)
                         if abs(fw * k - w) > 1 or abs(fh * k - h) > 1:
                             fail('%s: frame %dx%d (x%g) but bounds %dx%d' % (name, fw, fh, k, w, h))
                         decoded[0] += fw * fh * nf * 4
@@ -112,8 +112,8 @@ def main():
                         fail('%s: %d frames but the plugin sector has %d steps' % (name, nf, want))
                 elif size:
                     decoded[0] += size[0] * size[1] * 4
-                k = L.LUFS_SCALE if name.startswith('lufs ') else 1     # LUFS tab reuses METER art at 0.8
-                if size and data.get('imageType') != 'FilmStrip' and (abs(size[0] * k - w) > 1 or abs(size[1] * k - h) > 1):
+                # The MPC never shrinks an image (it crops it), so plain images must be exactly their bounds.
+                if size and data.get('imageType') != 'FilmStrip' and size != (w, h):
                     fail('%s: image %dx%d drawn into %dx%d (would be scaled)' % (name, size[0], size[1], w, h))
             elif kind == 'Button':
                 for key in ('onImage', 'offImage'):

@@ -1170,7 +1170,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s1.png",
+         "image": "needle_l1.png",
          "numFrames": 33,
          "handleName": "Parameter 12"
         }
@@ -1198,7 +1198,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s2.png",
+         "image": "needle_l2.png",
          "numFrames": 33,
          "handleName": "Parameter 13"
         }
@@ -1226,7 +1226,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s3.png",
+         "image": "needle_l3.png",
          "numFrames": 33,
          "handleName": "Parameter 14"
         }
@@ -1254,7 +1254,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s4.png",
+         "image": "needle_l4.png",
          "numFrames": 33,
          "handleName": "Parameter 15"
         }
@@ -1282,7 +1282,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s1.png",
+         "image": "needle_l1.png",
          "numFrames": 33,
          "handleName": "Parameter 16"
         }
@@ -1310,7 +1310,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s2.png",
+         "image": "needle_l2.png",
          "numFrames": 33,
          "handleName": "Parameter 17"
         }
@@ -1338,7 +1338,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s3.png",
+         "image": "needle_l3.png",
          "numFrames": 33,
          "handleName": "Parameter 18"
         }
@@ -1366,7 +1366,7 @@
          "version": 2,
          "imageType": "FilmStrip",
          "colour": "0",
-         "image": "needle_s4.png",
+         "image": "needle_l4.png",
          "numFrames": 33,
          "handleName": "Parameter 19"
         }
@@ -1398,7 +1398,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 14.0
+           "height": 22.0
           },
           "colour": "ff18120e",
           "justification": "right verticallyCentred",
@@ -1418,7 +1418,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "477 285 120 19"
+        "bounds": "447 279 150 29"
        }
       },
       {
@@ -1435,7 +1435,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 14.0
+           "height": 22.0
           },
           "colour": "ff18120e",
           "justification": "right verticallyCentred",
@@ -1455,7 +1455,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "962 285 120 19"
+        "bounds": "932 279 150 29"
        }
       },
       {
@@ -1586,7 +1586,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "Bold",
-           "height": 40.0
+           "height": 62.0
           },
           "colour": "ffffa83c",
           "justification": "right verticallyCentred",
@@ -1606,7 +1606,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "38 368 172 50"
+        "bounds": "38 360 172 66"
        }
       },
       {
@@ -1623,7 +1623,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "Bold",
-           "height": 40.0
+           "height": 62.0
           },
           "colour": "ffffa83c",
           "justification": "right verticallyCentred",
@@ -1643,7 +1643,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "338 368 172 50"
+        "bounds": "338 360 172 66"
        }
       },
       {
@@ -1660,7 +1660,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "Bold",
-           "height": 40.0
+           "height": 62.0
           },
           "colour": "ffffa83c",
           "justification": "right verticallyCentred",
@@ -1680,7 +1680,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "638 368 172 50"
+        "bounds": "638 360 172 66"
        }
       },
       {
@@ -1697,7 +1697,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "Bold",
-           "height": 40.0
+           "height": 62.0
           },
           "colour": "ffffa83c",
           "justification": "right verticallyCentred",
@@ -1717,7 +1717,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "938 368 172 50"
+        "bounds": "938 360 172 66"
        }
       },
       {
@@ -1734,7 +1734,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 16.0
+           "height": 25.0
           },
           "colour": "fff6c478",
           "justification": "left verticallyCentred",
@@ -1754,7 +1754,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "58 432 196 22"
+        "bounds": "58 429 196 28"
        }
       },
       {
@@ -1771,7 +1771,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 16.0
+           "height": 25.0
           },
           "colour": "fff6c478",
           "justification": "left verticallyCentred",
@@ -1791,7 +1791,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "258 432 120 22"
+        "bounds": "258 429 120 28"
        }
       },
       {
@@ -1808,7 +1808,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 16.0
+           "height": 25.0
           },
           "colour": "fff6c478",
           "justification": "horizontallyCentred verticallyCentred",
@@ -1828,7 +1828,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "540 432 200 22"
+        "bounds": "540 429 200 28"
        }
       },
       {
@@ -1845,7 +1845,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 16.0
+           "height": 25.0
           },
           "colour": "fff6c478",
           "justification": "right verticallyCentred",
@@ -1865,7 +1865,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1002 432 220 22"
+        "bounds": "1002 429 220 28"
        }
       },
       {
@@ -1969,7 +1969,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 24.0
+           "height": 37.0
           },
           "colour": "fff6e5be",
           "justification": "horizontallyCentred verticallyCentred",
@@ -2064,7 +2064,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 24.0
+           "height": 37.0
           },
           "colour": "fff6e5be",
           "justification": "horizontallyCentred verticallyCentred",
@@ -2159,7 +2159,7 @@
            "version": 1,
            "name": "Titillium Web",
            "style": "SemiBold",
-           "height": 26.0
+           "height": 40.0
           },
           "colour": "fff6e5be",
           "justification": "horizontallyCentred verticallyCentred",
@@ -2179,7 +2179,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1020 526 104 44"
+        "bounds": "1020 524 104 48"
        }
       },
       {

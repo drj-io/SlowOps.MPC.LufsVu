@@ -19,7 +19,8 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
    - At a sector change the plugin shows the new sector before blanking the old one.
 2. **Face swap.** Four full-cabinet images (1220 × 368): Warm, Cool and Off, plus one glow overlay shared by React and Cycle. The `View` parameter (10 steps) switches them through `IndexedEnabling/v/10`, and through `RangedEnabling` for the glow overlay.
 3. **Three tabs.** METER, LUFS and SETUP, each with its own background.
-   - The LUFS tab draws the METER faces, needle sectors and glow strip **scaled to 0.8** of their image size. It is unknown whether the MPC scales Image filmstrips smoothly; the needles are thin, so watch for jaggies.
+   - **Found on the Live III (v0.3.0):** the MPC does **not** shrink an image that is larger than its bounds; it draws it at native size and crops it. The LUFS faces and needle strips are therefore rendered at their final 0.8 size. Only the soft glow strip is scaled, and only up.
+   - **Found on the Live III:** Label text is drawn at about 0.65 of the requested font height. LUFS-tab Labels request `size / 0.65` (`skin_layout.label_px`).
 4. **Transparent tap areas.** Transparent Buttons over the CLIP lamps fire the `Reset Clip` trigger.
 
 5. **React and Cycle lighting.**
@@ -64,6 +65,5 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 - **Sector boundary flicker or a doubled needle.** Try 2 sectors (bigger sprites), or blank first and show second. Both are one-line changes in `SlowOpsVUMeter.cpp` and `skin_layout.py`.
 - **Memory too high.** Use 96 or 64 frames per needle, or narrower sectors. `check_skins.py` prints the decoded budget.
 - **IndexedEnabling with many steps is unreliable.** Gate the face images on `Light` directly instead of `View`.
-- **The LUFS tab's scaled needles look poor.** Render dedicated LUFS needle strips at 0.8 size (about +18 MiB) instead of scaling.
 - **Latency changes are not compensated.** Keep the limiter but report a constant latency whenever LIMITER *could* be used (a SETUP option), or shorten the look-ahead.
 - **Glow strips are not scaled, or look blocky.** Set `REACT_GLOW_SCALE = 2` in `skin_layout.py` (about +40 MiB). If memory then gets tight, drop to two palettes.

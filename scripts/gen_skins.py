@@ -159,7 +159,8 @@ def main():
                           'colour': L.argb(colour), 'justification': just + ' verticallyCentred', 'case': 'Original'},
             'type': 'Value', 'handleName': P(param)}, r, show='Hide')
 
-    # LUFS tab: the METER dials at LUFS_SCALE (same strips; scaled by the MPC to their bounds)
+    # LUFS tab: the METER dials at LUFS_SCALE. Faces and needle strips are rendered at that size
+    # (the MPC never shrinks an image); only the soft 1/4-res glow strip is scaled up.
     lufs = []
     for li, light in enumerate(L.STATIC_LIGHTS):
         lufs.append(image('lufs face %s' % light, 'face_lufs_%s.png' % light, L.LUFS_FACE, only=when('View', li, L.NUM_VIEWS)))
@@ -170,33 +171,33 @@ def main():
         wx, wy = dial.window[0], dial.window[1]
         for k in range(sectors):
             x, y, w, h = L.sector_box(dial, k)
-            lufs.append(filmstrip('lufs %s needle %d' % (key, k + 1), L.needle_file('s', k), per + 1,
-                                  'Parameter %d' % (first + k), L.lufs_rect((wx + x, wy + y, w, h))))
+            lufs.append(filmstrip('lufs %s needle %d' % (key, k + 1), L.lufs_needle_file(k), per + 1,
+                                  'Parameter %d' % (first + k), L.lufs_needle_rect(dial, k)))
     for name, param, window in (('lufs max L', 'L Max', L.STEREO_WINDOWS[0]), ('lufs max R', 'R Max', L.STEREO_WINDOWS[1])):
-        lufs.append(label(name, param, L.lufs_rect(L.max_label_rect(window)), 14, L.INK, 'right'))
+        lufs.append(label(name, param, L.lufs_max_rect(window), L.label_px(14), L.INK, 'right'))
     for i, name in enumerate(('L Clip', 'R Clip')):
         x, y = L.LUFS_LAMPS[i]
         lufs.append(filmstrip('side ' + name.lower(), 'lamp.png', 2, P(name), (x, y, L.LAMP, L.LAMP)))
         lufs.append(button('lufs %s reset' % name.lower(), 'hit_lufs', 1, 1, P('Reset Clip'), L.lufs_lamp_hit(i)))
     # tuning strip readouts
     for i, param in enumerate(L.READOUT_PARAMS):
-        lufs.append(label('readout %s' % param.lower(), param, L.readout_value_rect(i), 40, L.READOUT_AMBER, 'right', 'Bold'))
-    lufs.append(label('auto state', 'Auto State', L.STATUS_RECT, 16, L.STATUS_AMBER, 'left'))
-    lufs.append(label('auto gain', 'Auto Gain', L.AUTO_GAIN_RECT, 16, L.STATUS_AMBER, 'left'))
-    lufs.append(label('momentary', 'Momentary', L.MOMENTARY_RECT, 16, L.STATUS_AMBER, 'horizontallyCentred'))
-    lufs.append(label('elapsed', 'Elapsed', L.ELAPSED_RECT, 16, L.STATUS_AMBER, 'right'))
+        lufs.append(label('readout %s' % param.lower(), param, L.readout_value_rect(i), L.label_px(40), L.READOUT_AMBER, 'right', 'Bold'))
+    lufs.append(label('auto state', 'Auto State', L.STATUS_RECT, L.label_px(16), L.STATUS_AMBER, 'left'))
+    lufs.append(label('auto gain', 'Auto Gain', L.AUTO_GAIN_RECT, L.label_px(16), L.STATUS_AMBER, 'left'))
+    lufs.append(label('momentary', 'Momentary', L.MOMENTARY_RECT, L.label_px(16), L.STATUS_AMBER, 'horizontallyCentred'))
+    lufs.append(label('elapsed', 'Elapsed', L.ELAPSED_RECT, L.label_px(16), L.STATUS_AMBER, 'right'))
     # controls
     lufs.append(button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('auto')))
     lufs.append(button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('limiter')))
     for card, value, down, up in (('auto', 'Target', 'Target Down', 'Target Up'), ('limiter', 'Ceiling', 'Ceiling Down', 'Ceiling Up')):
         lft, pill, rgt = L.lufs_stepper(card)
         lufs.append(button(down.lower(), 'arrow_l', 1, 1, P(down), lft))
-        lufs.append(label(value.lower() + ' value', value, pill, 24, L.CREAM, 'horizontallyCentred'))
+        lufs.append(label(value.lower() + ' value', value, pill, L.label_px(24), L.CREAM, 'horizontallyCentred'))
         lufs.append(button(up.lower(), 'arrow_r', 1, 1, P(up), rgt))
     lufs.append(entry('lufs trim knob', 'Knob', {'version': 3, 'knobType': 'FilmStrip', 'filmStrip': 'knob_trim.png',
                                                  'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
                                                  'handleName': P('Trim')}, L.LUFS_KNOB, show='Hide', focus='Yes'))
-    lufs.append(label('lufs trim value', 'Trim', L.LUFS_TRIM_VALUE, 26, L.CREAM, 'horizontallyCentred'))
+    lufs.append(label('lufs trim value', 'Trim', L.LUFS_TRIM_VALUE, L.label_px(26), L.CREAM, 'horizontallyCentred'))
     lufs.append(button('clear', 'clear', 1, 1, P('Clear'), L.CLEAR_BUTTON))
     lufs.append(button('run hold', 'hold', 1, 1, P('Measure'), L.HOLD_BUTTON))
 
