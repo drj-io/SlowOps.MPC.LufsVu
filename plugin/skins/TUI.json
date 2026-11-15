@@ -1606,7 +1606,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "38 360 172 66"
+        "bounds": "164 360 160 66"
        }
       },
       {
@@ -1643,7 +1643,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "338 360 172 66"
+        "bounds": "429 360 160 66"
        }
       },
       {
@@ -1680,7 +1680,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "638 360 172 66"
+        "bounds": "694 360 160 66"
        }
       },
       {
@@ -1717,7 +1717,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "938 360 172 66"
+        "bounds": "959 360 160 66"
        }
       },
       {
@@ -1737,7 +1737,7 @@
            "height": 25.0
           },
           "colour": "fff6c478",
-          "justification": "left verticallyCentred",
+          "justification": "right verticallyCentred",
           "case": "Original"
          },
          "type": "Value",
@@ -1754,7 +1754,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "58 429 196 28"
+        "bounds": "876 429 244 28"
        }
       },
       {
@@ -1774,7 +1774,7 @@
            "height": 25.0
           },
           "colour": "fff6c478",
-          "justification": "left verticallyCentred",
+          "justification": "right verticallyCentred",
           "case": "Original"
          },
          "type": "Value",
@@ -1791,7 +1791,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "258 429 120 28"
+        "bounds": "1126 429 96 28"
        }
       },
       {
@@ -1828,7 +1828,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "540 429 200 28"
+        "bounds": "610 429 200 28"
        }
       },
       {
@@ -1848,7 +1848,7 @@
            "height": 25.0
           },
           "colour": "fff6c478",
-          "justification": "right verticallyCentred",
+          "justification": "left verticallyCentred",
           "case": "Original"
          },
          "type": "Value",
@@ -1865,7 +1865,65 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1002 429 220 28"
+        "bounds": "196 429 120 28"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "clear",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "clear_on.png",
+         "offImage": "clear_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 43",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "52 350 116 46"
+       }
+      },
+      {
+       "version": 2,
+       "componentData": {
+        "version": 1,
+        "name": "run hold",
+        "type": "Button",
+        "data": {
+         "version": 2,
+         "onImage": "hold_on.png",
+         "offImage": "hold_off.png",
+         "buttonId": 1,
+         "numButtonsInGroup": 1,
+         "handleName": "Parameter 42",
+         "gestureBehaviour": "Instant"
+        }
+       },
+       "handle remapping": {
+        "version": 1,
+        "map": []
+       },
+       "bounds": {
+        "version": 1,
+        "acceptsHWFocus": "No",
+        "showWhenDataModelInvalid": "Hide",
+        "whenVisible": "Always",
+        "boundsType": "Absolute",
+        "bounds": "52 402 116 46"
        }
       },
       {
@@ -1923,7 +1981,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "488 544 136 52"
+        "bounds": "784 544 136 52"
        }
       },
       {
@@ -1952,7 +2010,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "206 544 44 50"
+        "bounds": "212 544 44 50"
        }
       },
       {
@@ -1989,7 +2047,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "254 544 144 50"
+        "bounds": "260 544 144 50"
        }
       },
       {
@@ -2018,7 +2076,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "402 544 44 50"
+        "bounds": "408 544 44 50"
        }
       },
       {
@@ -2047,7 +2105,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "658 544 44 50"
+        "bounds": "982 544 44 50"
        }
       },
       {
@@ -2084,7 +2142,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "706 544 144 50"
+        "bounds": "1030 544 144 50"
        }
       },
       {
@@ -2113,7 +2171,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "854 544 44 50"
+        "bounds": "1178 544 44 50"
        }
       },
       {
@@ -2142,7 +2200,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "940 510 76 76"
+        "bounds": "496 528 76 76"
        }
       },
       {
@@ -2179,65 +2237,7 @@
         "showWhenDataModelInvalid": "Hide",
         "whenVisible": "Always",
         "boundsType": "Absolute",
-        "bounds": "1020 524 104 48"
-       }
-      },
-      {
-       "version": 2,
-       "componentData": {
-        "version": 1,
-        "name": "clear",
-        "type": "Button",
-        "data": {
-         "version": 2,
-         "onImage": "clear_on.png",
-         "offImage": "clear_off.png",
-         "buttonId": 1,
-         "numButtonsInGroup": 1,
-         "handleName": "Parameter 43",
-         "gestureBehaviour": "Instant"
-        }
-       },
-       "handle remapping": {
-        "version": 1,
-        "map": []
-       },
-       "bounds": {
-        "version": 1,
-        "acceptsHWFocus": "No",
-        "showWhenDataModelInvalid": "Hide",
-        "whenVisible": "Always",
-        "boundsType": "Absolute",
-        "bounds": "1128 494 124 52"
-       }
-      },
-      {
-       "version": 2,
-       "componentData": {
-        "version": 1,
-        "name": "run hold",
-        "type": "Button",
-        "data": {
-         "version": 2,
-         "onImage": "hold_on.png",
-         "offImage": "hold_off.png",
-         "buttonId": 1,
-         "numButtonsInGroup": 1,
-         "handleName": "Parameter 42",
-         "gestureBehaviour": "Instant"
-        }
-       },
-       "handle remapping": {
-        "version": 1,
-        "map": []
-       },
-       "bounds": {
-        "version": 1,
-        "acceptsHWFocus": "No",
-        "showWhenDataModelInvalid": "Hide",
-        "whenVisible": "Always",
-        "boundsType": "Absolute",
-        "bounds": "1128 552 124 52"
+        "bounds": "582 542 150 48"
        }
       }
      ]

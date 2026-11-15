@@ -255,11 +255,14 @@ def tuning_strip(bg):
     bg.alpha_composite(lamps.filter(ImageFilter.GaussianBlur(18)))
     rules = Image.new('RGBA', bg.size, (0, 0, 0, 0))
     rd = ImageDraw.Draw(rules)
-    for i in range(1, 4):                                   # gold dividers
-        dx = x + w * i / 4.0
+    for i in range(1, 4):                                   # gold dividers between the readouts
+        dx = L.READOUT_X0 + L.READOUT_W * i / 4.0
         rd.line([(dx, y + 14), (dx, y + 76)], fill=L.BRASS_LIGHT + (150,), width=2)
+    # the measurement controls (CLEAR, RUN/HOLD) get their own bay at the left end
+    rd.line([(L.READOUT_X0, y + 10), (L.READOUT_X0, y + h - 10)], fill=L.BRASS_LIGHT + (190,), width=2)
+    rd.line([(L.READOUT_X0 + 3, y + 10), (L.READOUT_X0 + 3, y + h - 10)], fill=(20, 10, 4, 160), width=1)
     # decorative tuning scale
-    t0, t1, ty = x + 24, x + w - 24, L.STRIP_TICKS_Y
+    t0, t1, ty = L.READOUT_X0 + 18, x + w - 24, L.STRIP_TICKS_Y
     rd.line([(t0, ty), (t1, ty)], fill=(240, 170, 80, 150), width=1)
     k = 0
     xx = t0
@@ -306,22 +309,18 @@ def make_lufs_background():
         card(bg, r)
     rules = Image.new('RGBA', bg.size, (0, 0, 0, 0))
     rd = ImageDraw.Draw(rules)
-    for key, (left, right) in L.LUFS_TITLES.items():
+    for key, sections in L.LUFS_SECTIONS.items():
         x, y, w, h = L.LUFS_CARDS[key]
-        rd.line([(x + L.LUFS_SPLIT, y + 18), (x + L.LUFS_SPLIT, y + h - 18)], fill=L.BRASS + (120,), width=2)
-        for title, (sx0, sx1) in ((left, (x, x + L.LUFS_SPLIT)), (right, (x + L.LUFS_SPLIT, x + w))):
+        for i, (title, s0, s1) in enumerate(sections):
+            if i:
+                rd.line([(x + s0, y + 18), (x + s0, y + h - 18)], fill=L.BRASS + (120,), width=2)
             t = text_image(title, 19, L.AMBER_TEXT + (255,), tracking=0.16)
-            bg.alpha_composite(t, (int((sx0 + sx1) / 2.0 - t.size[0] / 2), y + 22))
+            bg.alpha_composite(t, (int(x + (s0 + s1) / 2.0 - t.size[0] / 2), y + 22))
         _, pill, _ = L.lufs_stepper(key)                      # inset value window between the arrows
         px, py, pw, ph = pill
         paste(bg, vgrad(pw, ph, (10, 10, 20), (26, 26, 44)), rr_mask(pw, ph, (0, 0, pw, ph), 12), (px, py))
         bg.alpha_composite(glow_rect(bg.size, pill, 12, (110, 104, 160), 0.5, 2, 200))
-    tx, ty, tw, th = L.LUFS_CARDS['trim']
-    rd.line([(L.CLEAR_BUTTON[0] - 8, ty + 18), (L.CLEAR_BUTTON[0] - 8, ty + th - 18)], fill=L.BRASS + (120,), width=2)
     bg.alpha_composite(rules)
-    vx, vy, vw, vh = L.LUFS_TRIM_VALUE
-    t = text_image('TRIM', 16, L.AMBER_TEXT + (255,), tracking=0.16)
-    bg.alpha_composite(t, (int(vx + vw / 2 - t.size[0] / 2), vy - 22))
     return bg
 
 
@@ -659,11 +658,11 @@ def make_controls():
         pair('pal_%d' % i, L.PALETTE_BUTTONS[i], lab, 'pal:' + name, size=19)
 
     # LUFS tab: ON/OFF toggles, arrow keys (lit while pressed), CLEAR, RUN/HOLD
-    for name, card in (('lufs_auto', 'auto'), ('lufs_lim', 'limiter')):
+    for name, card in (('lufs_auto', 'gain'), ('lufs_lim', 'output')):
         _, _, w, h = L.lufs_toggle(card)
         save(button(w, h, 'ON', 'seg', True, 24), name + '_on.png')
         save(button(w, h, 'OFF', 'seg', False, 24), name + '_off.png')
-    lft, _, rgt = L.lufs_stepper('auto')
+    lft, _, rgt = L.lufs_stepper('gain')
     pair('arrow_l', lft, '<', 'arrow')
     pair('arrow_r', rgt, '>', 'arrow')
     pair('clear', L.CLEAR_BUTTON, 'CLEAR', 'clear', size=21)
@@ -893,8 +892,8 @@ def lufs_preview(lbg, faces, light_i=0, hue=0.0, out='preview-lufs.png', limiter
         g = t.filter(ImageFilter.GaussianBlur(4))
         page.alpha_composite(g, (vx + vw - t.size[0], vy + (vh - t.size[1]) // 2))
         page.alpha_composite(t, (vx + vw - t.size[0], vy + (vh - t.size[1]) // 2))
-    for rect, text, just in ((L.STATUS_RECT, 'AUTO IN RANGE', 'l'), (L.AUTO_GAIN_RECT, '+3.2 dB', 'l'),
-                             (L.MOMENTARY_RECT, 'M -12.8', 'c'), (L.ELAPSED_RECT, '02:34', 'r')):
+    for rect, text, just in ((L.STATUS_RECT, 'AUTO IN RANGE', 'r'), (L.AUTO_GAIN_RECT, '+3.2 dB', 'r'),
+                             (L.MOMENTARY_RECT, 'M -12.8', 'c'), (L.ELAPSED_RECT, '02:34', 'l')):
         t = text_image(text, 16, (246, 196, 120, 255), slant=0.0, semi=True)
         x, y, w, h = rect
         tx = x if just == 'l' else (x + (w - t.size[0]) // 2 if just == 'c' else x + w - t.size[0])
@@ -902,9 +901,9 @@ def lufs_preview(lbg, faces, light_i=0, hue=0.0, out='preview-lufs.png', limiter
     def btn(name, rect, on):
         img = Image.open(os.path.join(OUT, name + ('_on.png' if on else '_off.png')))
         page.alpha_composite(img, rect[:2])
-    btn('lufs_auto', L.lufs_toggle('auto'), True)
-    btn('lufs_lim', L.lufs_toggle('limiter'), limiter)
-    for card, val in (('auto', '-14.0 LUFS'), ('limiter', '-1.0 dBTP')):
+    btn('lufs_auto', L.lufs_toggle('gain'), True)
+    btn('lufs_lim', L.lufs_toggle('output'), limiter)
+    for card, val in (('gain', '-14.0 LUFS'), ('output', '-1.0 dBTP')):
         lft, pill, rgt = L.lufs_stepper(card)
         btn('arrow_l', lft, False)
         btn('arrow_r', rgt, False)

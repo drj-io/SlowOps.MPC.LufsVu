@@ -20,6 +20,8 @@ Signal chain: **in → AUTO gain + TRIM (one gain for L and R) → LIMITER → o
 
 Loudness per ITU-R BS.1770 / EBU R 128, measured on the **output**. The scale under the numbers is decoration; the numbers are the readings.
 
+Layout: the readout strip holds the **measurement** controls at its left end (CLEAR, RUN/HOLD: they only affect the readings). Below it, the **GAIN** card (AUTO, TARGET, TRIM: everything that sets the level) and the **OUTPUT** card (LIMITER, CEILING: protection after the gain).
+
 | Readout | What it shows |
 |---|---|
 | **INTEGRATED** (LUFS) | Programme loudness since CLEAR, gated (−70 LUFS absolute, then 10 LU below the programme), so silence and quiet gaps do not pull it down. `--.-` until 0.4 s of programme has been measured. |

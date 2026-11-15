@@ -15,7 +15,8 @@ LUFS tab:
   * the same dials at 0.8 scale (shared needle and glow strips; caption-free faces), clip lamps
   * smoked-glass tuning strip: INTEGRATED | SHORT-TERM | TRUE PEAK MAX | GAIN REDUCTION
     Labels, plus AUTO status / auto gain / momentary / elapsed
-  * AUTO + TARGET < > | LIMITER + CEILING < > | TRIM knob, CLEAR, RUN/HOLD
+    (CLEAR and RUN/HOLD sit at the strip's left end: they control the measurement)
+  * GAIN card: AUTO | TARGET < > | TRIM knob;  OUTPUT card: LIMITER | CEILING < >
 SETUP tab: CALIBRATION | CLIP LEVEL, then LIGHT (STATIC | REACT + palette | CYCLE + rate).
 The plugin is stereo only; the retired mono parameters have no widgets.
 """
@@ -182,14 +183,18 @@ def main():
     # tuning strip readouts
     for i, param in enumerate(L.READOUT_PARAMS):
         lufs.append(label('readout %s' % param.lower(), param, L.readout_value_rect(i), L.label_px(40), L.READOUT_AMBER, 'right', 'Bold'))
-    lufs.append(label('auto state', 'Auto State', L.STATUS_RECT, L.label_px(16), L.STATUS_AMBER, 'left'))
-    lufs.append(label('auto gain', 'Auto Gain', L.AUTO_GAIN_RECT, L.label_px(16), L.STATUS_AMBER, 'left'))
+    lufs.append(label('auto state', 'Auto State', L.STATUS_RECT, L.label_px(16), L.STATUS_AMBER, 'right'))
+    lufs.append(label('auto gain', 'Auto Gain', L.AUTO_GAIN_RECT, L.label_px(16), L.STATUS_AMBER, 'right'))
     lufs.append(label('momentary', 'Momentary', L.MOMENTARY_RECT, L.label_px(16), L.STATUS_AMBER, 'horizontallyCentred'))
-    lufs.append(label('elapsed', 'Elapsed', L.ELAPSED_RECT, L.label_px(16), L.STATUS_AMBER, 'right'))
+    lufs.append(label('elapsed', 'Elapsed', L.ELAPSED_RECT, L.label_px(16), L.STATUS_AMBER, 'left'))
+    # measurement controls, at the left end of the readout strip
+    lufs.append(button('clear', 'clear', 1, 1, P('Clear'), L.CLEAR_BUTTON))
+    lufs.append(button('run hold', 'hold', 1, 1, P('Measure'), L.HOLD_BUTTON))
     # controls
-    lufs.append(button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('auto')))
-    lufs.append(button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('limiter')))
-    for card, value, down, up in (('auto', 'Target', 'Target Down', 'Target Up'), ('limiter', 'Ceiling', 'Ceiling Down', 'Ceiling Up')):
+    # GAIN card (AUTO | TARGET | TRIM) and OUTPUT card (LIMITER | CEILING)
+    lufs.append(button('lufs auto', 'lufs_auto', 1, 1, P('LUFS Auto'), L.lufs_toggle('gain')))
+    lufs.append(button('limiter', 'lufs_lim', 1, 1, P('Limiter'), L.lufs_toggle('output')))
+    for card, value, down, up in (('gain', 'Target', 'Target Down', 'Target Up'), ('output', 'Ceiling', 'Ceiling Down', 'Ceiling Up')):
         lft, pill, rgt = L.lufs_stepper(card)
         lufs.append(button(down.lower(), 'arrow_l', 1, 1, P(down), lft))
         lufs.append(label(value.lower() + ' value', value, pill, L.label_px(24), L.CREAM, 'horizontallyCentred'))
@@ -198,8 +203,6 @@ def main():
                                                  'numFrames': 127, 'invert': False, 'dragOrientation': 'Vertical',
                                                  'handleName': P('Trim')}, L.LUFS_KNOB, show='Hide', focus='Yes'))
     lufs.append(label('lufs trim value', 'Trim', L.LUFS_TRIM_VALUE, L.label_px(26), L.CREAM, 'horizontallyCentred'))
-    lufs.append(button('clear', 'clear', 1, 1, P('Clear'), L.CLEAR_BUTTON))
-    lufs.append(button('run hold', 'hold', 1, 1, P('Measure'), L.HOLD_BUTTON))
 
     def make_tab(name, key, bgimg, children):
         bg = {'version': 1, 'colour': L.argb(L.NAVY), 'image': bgimg}

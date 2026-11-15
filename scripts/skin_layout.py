@@ -448,35 +448,45 @@ def lufs_lamp_hit(i):
 
 
 DIAL_STRIP = (40, 340, 1200, 118)              # the tuning-dial readout strip
+# The strip's left end holds the measurement controls (CLEAR, RUN/HOLD); the readouts fill the rest.
+STRIP_CTRL_W = 140
+READOUT_X0 = DIAL_STRIP[0] + STRIP_CTRL_W
+READOUT_W = DIAL_STRIP[0] + DIAL_STRIP[2] - READOUT_X0
+CLEAR_BUTTON = (DIAL_STRIP[0] + 12, DIAL_STRIP[1] + 10, 116, 46)
+HOLD_BUTTON = (DIAL_STRIP[0] + 12, DIAL_STRIP[1] + 62, 116, 46)
 READOUT_TITLES = ['INTEGRATED', 'SHORT-TERM', 'TRUE PEAK MAX', 'GAIN REDUCTION']
 READOUT_UNITS = ['LUFS', 'LUFS', 'dBTP', 'dB']
 READOUT_PARAMS = ['Integrated', 'Short-term', 'True Peak Max', 'Gain Reduction']
 
 
 def readout_centre(i):
-    return DIAL_STRIP[0] + DIAL_STRIP[2] * (2 * i + 1) / 8.0
+    return READOUT_X0 + READOUT_W * (2 * i + 1) / 8.0
 
 
 def readout_value_rect(i):
     """Right-justified number; the unit is printed just right of it on the background."""
     cx = readout_centre(i)
-    return (int(cx - 152), DIAL_STRIP[1] + 20, 172, 66)
+    return (int(cx - 148), DIAL_STRIP[1] + 20, 160, 66)
 
 
-READOUT_UNIT_X = 30                            # unit starts this far right of the column centre
+READOUT_UNIT_X = 26                            # unit starts this far right of the column centre
 STRIP_TICKS_Y = DIAL_STRIP[1] + 82             # decorative tuning scale
-STATUS_ROW_Y = DIAL_STRIP[1] + 89              # small Labels: AUTO status + gain | momentary | elapsed
-STATUS_RECT = (DIAL_STRIP[0] + 18, STATUS_ROW_Y, 196, 28)
-AUTO_GAIN_RECT = (DIAL_STRIP[0] + 218, STATUS_ROW_Y, 120, 28)
-MOMENTARY_RECT = (DIAL_STRIP[0] + 500, STATUS_ROW_Y, 200, 28)
-ELAPSED_RECT = (DIAL_STRIP[0] + DIAL_STRIP[2] - 18 - 220, STATUS_ROW_Y, 220, 28)
+STATUS_ROW_Y = DIAL_STRIP[1] + 89              # small Labels: elapsed | momentary | AUTO status + gain
+ELAPSED_RECT = (READOUT_X0 + 16, STATUS_ROW_Y, 120, 28)
+MOMENTARY_RECT = (int(READOUT_X0 + READOUT_W / 2 - 100), STATUS_ROW_Y, 200, 28)
+AUTO_GAIN_RECT = (DIAL_STRIP[0] + DIAL_STRIP[2] - 18 - 96, STATUS_ROW_Y, 96, 28)
+STATUS_RECT = (AUTO_GAIN_RECT[0] - 250, STATUS_ROW_Y, 244, 28)
 
+# Bottom cards: GAIN (AUTO | TARGET | TRIM: everything that sets the level) and OUTPUT
+# (LIMITER | CEILING: protection after the gain). Sections are (title, x0, x1) inside the card.
 LUFS_CARDS = {                                 # x, y, w, h
-    'auto':    (16, 482, 440, 132),
-    'limiter': (468, 482, 440, 132),
-    'trim':    (920, 482, 344, 132),
+    'gain':   (16, 482, 736, 132),
+    'output': (764, 482, 500, 132),
 }
-LUFS_SPLIT = 176                               # divider inside the auto / limiter cards
+LUFS_SECTIONS = {
+    'gain':   [('AUTO', 0, 176), ('TARGET', 176, 456), ('TRIM', 456, 736)],
+    'output': [('LIMITER', 0, 176), ('CEILING', 176, 500)],
+}
 
 
 def lufs_toggle(card):
@@ -485,14 +495,13 @@ def lufs_toggle(card):
 
 
 def lufs_stepper(card):
-    """(left arrow, value pill, right arrow) rects for TARGET / CEILING."""
+    """(left arrow, value pill, right arrow) rects, centred in the card's second section."""
     x, y, w, h = LUFS_CARDS[card]
-    return ((x + 190, y + 62, 44, 50), (x + 238, y + 62, 144, 50), (x + 386, y + 62, 44, 50))
+    _, s0, s1 = LUFS_SECTIONS[card][1]
+    left = int(x + (s0 + s1) / 2.0 - 120)
+    return ((left, y + 62, 44, 50), (left + 48, y + 62, 144, 50), (left + 196, y + 62, 44, 50))
 
 
-LUFS_TITLES = {'auto': ('AUTO', 'TARGET'), 'limiter': ('LIMITER', 'CEILING')}
-_tx, _ty = LUFS_CARDS['trim'][0], LUFS_CARDS['trim'][1]
-LUFS_KNOB = (_tx + 20, _ty + 28, KNOB_SIZE, KNOB_SIZE)
-LUFS_TRIM_VALUE = (_tx + 100, _ty + 42, 104, 48)
-CLEAR_BUTTON = (_tx + 208, _ty + 12, 124, 52)
-HOLD_BUTTON = (_tx + 208, _ty + 70, 124, 52)
+_gx, _gy = LUFS_CARDS['gain'][0], LUFS_CARDS['gain'][1]
+LUFS_KNOB = (_gx + 480, _gy + 46, KNOB_SIZE, KNOB_SIZE)
+LUFS_TRIM_VALUE = (_gx + 566, _gy + 60, 150, 48)
