@@ -7,7 +7,7 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 - **Calibration**: 0 VU = −20 / −18 / −14 dBFS. The reference is a 1 kHz sine whose *peak* is at that level.
 - **CLIP lamps**: sample-peak at a selectable CLIP LEVEL, with an optional 2 s hold. Tap a lamp to reset it. This is not true-peak detection.
 - **LIGHT**: Warm, Cool, Off, **React** or **Cycle**.
-  - **React** makes the dials and cabinet glow blue → red → purple as the program heats up, with filament-like warm-up and cool-down. ![react](docs/images/react.gif)
+  - **React** makes the dials glow blue → red → purple as the program heats up, with filament-like warm-up and cool-down. ![react](docs/images/react.gif)
   - **Cycle** sweeps round the hue wheel once every two bars, locked to the MPC's tempo and song position. ![cycle](docs/images/cycle.gif)
 - **AUTO trim**: one tap, 3 s of listening, and TRIM is set so the music averages 0 VU.
 - **PHASE** correlation meter, **MAX** VU readouts, and a selectable **CLIP LEVEL** (0 / −0.3 / −1 / −3 dBFS).

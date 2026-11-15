@@ -402,22 +402,9 @@ def glow_frame(mode, f):
     return img
 
 
-def halo_frame(f):
-    """Full-resolution cabinet halo in the frame's colour (drawn over the static neon edge)."""
-    hx, hy, hw, hh = L.HALO
-    col, heat = L.glow_frame_colour(f)
-    cab = (L.CABINET[0] - hx, L.CABINET[1] - hy, L.CABINET[2], L.CABINET[3])
-    img = Image.new('RGBA', (hw, hh), (0, 0, 0, 0))
-    strength = 0.85 + 0.15 * heat
-    img.alpha_composite(glow_rect((hw, hh), cab, 30, col, 14, 12, int(255 * strength)))
-    img.alpha_composite(glow_rect((hw, hh), cab, 30, col, 6, 6, int(255 * strength)))
-    img.alpha_composite(glow_rect((hw, hh), cab, 30, mix(col, (255, 255, 255), 0.35), 3, 4, int(255 * strength)))
-    return img
-
-
 def make_glow():
     n = L.GLOW_FRAMES
-    gs, hs = L.REACT_GLOW_SCALE, L.REACT_HALO_SCALE
+    gs = L.REACT_GLOW_SCALE
     cw, ch = L.CABINET_INNER[2], L.CABINET_INNER[3]
     for mode in ['stereo']:
         fw, fh = cw // gs, ch // gs
@@ -425,11 +412,6 @@ def make_glow():
         for f in range(n):
             strip.alpha_composite(glow_frame(mode, f).resize((fw, fh), Image.LANCZOS), (0, f * fh))
         save(strip, 'glow_%s.png' % mode)
-    hw, hh = L.HALO[2] // hs, L.HALO[3] // hs
-    strip = Image.new('RGBA', (hw, hh * n), (0, 0, 0, 0))
-    for f in range(n):
-        strip.alpha_composite(halo_frame(f).resize((hw, hh), Image.LANCZOS), (0, f * hh))
-    save(strip, 'glow_halo.png')
 
 
 # ---------------------------------------------------------------------------- needles
@@ -673,9 +655,6 @@ def compose(bg, faces, mode, light_i, vus, cal=1, heat=0.0, clip=True, hue=0.0, 
             step = palette * L.HEAT_FRAMES + int(round(heat * (L.HEAT_FRAMES - 1)))
         else:
             step = L.HUE_FIRST + int(round(hue * L.HUE_FRAMES)) % L.HUE_FRAMES
-        halo = Image.open(os.path.join(OUT, 'glow_halo.png'))
-        hw, hh = halo.size[0], halo.size[1] // L.GLOW_FRAMES
-        page.alpha_composite(halo.crop((0, step * hh, hw, (step + 1) * hh)).resize(L.HALO[2:], Image.BILINEAR), L.HALO[:2])
         glow = Image.open(os.path.join(OUT, 'glow_%s.png' % mode))
         gw, gh = glow.size[0], glow.size[1] // L.GLOW_FRAMES
         page.alpha_composite(glow.crop((0, step * gh, gw, (step + 1) * gh)).resize(L.CABINET_INNER[2:], Image.BILINEAR),

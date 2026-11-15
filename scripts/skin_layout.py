@@ -65,7 +65,6 @@ HUE_FIRST = HEAT_FRAMES * len(PALETTE_ORDER)
 FLASH_FRAME = HUE_FIRST + HUE_FRAMES
 GLOW_FRAMES = FLASH_FRAME + 1
 REACT_GLOW_SCALE = 4                             # face glow strip at 1/4 resolution (edges hidden under the bezel)
-REACT_HALO_SCALE = 4                             # cabinet halo strip at 1/4 resolution
 FLASH_COLOUR = (255, 250, 238)
 HEAT_STOPS = [                                   # Thermal: heat 0..1 -> backlight colour
     (0.00, (34, 78, 255)),                       # deep blue: quiet
@@ -220,7 +219,6 @@ RATE_BUTTONS = row_buttons(*light_col('cycle'), LIGHT_SUB_Y, 4)
 CLIP_LABELS = ['0 dBFS', '\u22120.3 dBFS', '\u22121 dBFS', '\u22123 dBFS']
 RATE_LABELS = ['1 BAR', '2 BARS', '4 BARS', '8 BARS']
 PALETTE_LABELS = ['THERMAL', 'NEON', 'AMBER']
-HALO = (0, 40, 1280, 432)                      # React cabinet halo region (1/4-res strip)
 
 # ---------------------------------------------------------------------------- dials
 # A dial "window" is the cream face inside a brass bezel. Needle sprites are positioned

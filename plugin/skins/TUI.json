@@ -149,37 +149,6 @@
        "version": 2,
        "componentData": {
         "version": 1,
-        "name": "glow halo",
-        "type": "Image",
-        "data": {
-         "version": 2,
-         "imageType": "FilmStrip",
-         "colour": "0",
-         "image": "glow_halo.png",
-         "numFrames": 169,
-         "handleName": "Parameter 28"
-        }
-       },
-       "handle remapping": {
-        "version": 1,
-        "map": []
-       },
-       "bounds": {
-        "version": 2,
-        "acceptsHWFocus": "No",
-        "showWhenDataModelInvalid": "Hide",
-        "whenVisible": "Always",
-        "boundsType": "Absolute",
-        "bounds": "0 40 1280 432",
-        "additionalInvalidatingHandles": [
-         "RangedEnabling/3/4/5/Parameter 4"
-        ]
-       }
-      },
-      {
-       "version": 2,
-       "componentData": {
-        "version": 1,
         "name": "face warm",
         "type": "Image",
         "data": {

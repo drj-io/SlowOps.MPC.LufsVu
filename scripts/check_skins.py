@@ -73,8 +73,7 @@ def main():
         for k in range(sectors):
             needle_frames['Parameter %d' % (first + k)] = per + 1
 
-    SCALED = {'glow_stereo.png': L.REACT_GLOW_SCALE, 'glow_mono.png': L.REACT_GLOW_SCALE,
-              'glow_halo.png': L.REACT_HALO_SCALE}
+    SCALED = {'glow_stereo.png': L.REACT_GLOW_SCALE, 'glow_mono.png': L.REACT_GLOW_SCALE}
     decoded = [0]
     widgets = 0
     for tab in page['tabs']:
@@ -102,7 +101,7 @@ def main():
                         fail('%s: %s height %d not divisible by %d frames' % (name, data['image'], size[1], nf))
                     else:
                         fw, fh = size[0], size[1] // nf
-                        # React glow/halo strips are smooth gradients drawn at reduced size on purpose.
+                        # React glow strips are smooth gradients drawn at reduced size on purpose.
                         k = SCALED.get(data['image'], 1)
                         if (fw * k, fh * k) != (w, h):
                             fail('%s: frame %dx%d (x%d) but bounds %dx%d' % (name, fw, fh, k, w, h))

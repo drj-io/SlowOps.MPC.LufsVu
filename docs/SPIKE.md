@@ -22,7 +22,7 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 4. **Transparent tap areas.** Transparent Buttons over the CLIP lamps fire the `Reset Clip` trigger.
 
 5. **React and Cycle lighting.**
-   - A 169-step `Glow` parameter drives three filmstrips: a cabinet halo strip and two face-glow strips, all drawn at 1/4 size. The steps are 3 palettes × 16 heat steps, then 120 hue steps, then 1 white clip-flash frame. The glow bleeds 10 px under the bezel so its soft edge is hidden.
+   - A 169-step `Glow` parameter drives the face-glow filmstrip, drawn at 1/4 size. The steps are 3 palettes × 16 heat steps, then 120 hue steps, then 1 white clip-flash frame. The glow bleeds 10 px under the bezel so its soft edge is hidden.
    - The MPC must scale them up to their bounds. It is not yet known whether it scales filmstrip frames, or how smoothly.
    - The glow sits under a full-resolution transparent overlay (bezel, scale, legends).
 
@@ -40,12 +40,12 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 8 | Check memory and responsiveness | Note memory % before and after opening the plugin and after the view swaps, the page open time, and whether touch and data-wheel response stays crisp while needles move |
 | 9 | Save the project, restart the MPC, reload | 0 VU, Peak, Light, Palette, Rate, Clip Level, Trim and Bypass are restored; needles start at rest |
 | 10 | Run two instances on different tracks with different lights | Independent |
-| 11 | Set LIGHT to REACT and play quiet, then loud, then stop | The dials and halo glow blue when quiet, red near 0 VU and purple when pinned, then fade back to blue over about a second. The glow fills the dial windows exactly; there are no blocky edges or misaligned frames, and the printed scale stays crisp |
+| 11 | Set LIGHT to REACT and play quiet, then loud, then stop | The dials glow blue when quiet, red near 0 VU and purple when pinned, then fade back to blue over about a second. The glow fills the dial windows exactly; there are no blocky edges or misaligned frames, and the printed scale stays crisp |
 | 12 | Set LIGHT to CYCLE; play a sequence at 120 BPM, then stop; change the tempo and time signature | One trip round the colour wheel per 2 bars, the same colour on the same beat every phrase. Pressing Play glides onto the beat. Cycling continues at the tempo when stopped |
 | 13 | Play a loop at about −6 VU and tap AUTO | The button glows for about 3 s, TRIM jumps to about +6.0 dB, the needles then sit around 0 VU. A second tap during listening cancels |
 | 14 | Play mono material, then wide stereo, then flip one channel's polarity | PHASE marker near +1, then near 0, then in the red near −1. With no signal the marker parks |
 | 15 | Push the meter, then tap a CLIP lamp | MAX shows the highest reading (in each dial's lower-right corner) and clears on the tap. Set CLIP LEVEL to −1 on SETUP: a −0.5 dBFS peak now lights CLIP |
-| 16 | Open the SETUP tab: try every CALIBRATION, CLIP LEVEL, LIGHT, PALETTE and RATE button, and Q-Links 13–16 and 9 | Settings apply on METER. In CYCLE, a clip flashes the cabinet white for one beat |
+| 16 | Open the SETUP tab: try every CALIBRATION, CLIP LEVEL, LIGHT, PALETTE and RATE button, and Q-Links 13–16 and 9 | Settings apply on METER. In CYCLE, a clip flashes the dials white for one beat; the cabinet border never changes colour |
 
 ## If something fails
 

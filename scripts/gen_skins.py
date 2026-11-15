@@ -88,13 +88,9 @@ def main():
     if BY_INDEX[glow]['choices'] and len(BY_INDEX[glow]['choices']) != L.GLOW_FRAMES:
         sys.exit('gen_skins: plugin Glow has %d steps, skin_layout.GLOW_FRAMES is %d'
                  % (len(BY_INDEX[glow]['choices']), L.GLOW_FRAMES))
-    nl = len(L.LIGHT_ORDER)
     g0, g1 = L.LIGHT_ORDER.index(L.GLOW_LIGHTS[0]), L.LIGHT_ORDER.index(L.GLOW_LIGHTS[-1])
 
-    # React / Cycle: cabinet halo in the glow colour (1/4-res strip, scaled up by the MPC)
-    comps.append(filmstrip('glow halo', 'glow_halo.png', L.GLOW_FRAMES, P('Glow'), L.HALO,
-                           only='RangedEnabling/%d/%d/%d/%s' % (g0, g1, nl, P('Light'))))
-
+    # The cabinet border never changes colour: React / Cycle only light the dial windows.
     # dial faces, one per View (= Light; the plugin is stereo only). React and Cycle share a
     # 1/4-res glow strip under a transparent window overlay.
     for li, light in enumerate(L.STATIC_LIGHTS):
