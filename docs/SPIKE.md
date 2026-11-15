@@ -18,13 +18,18 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
    - Exactly one sector per needle shows a needle.
    - At a sector change the plugin shows the new sector before blanking the old one.
 2. **Face swap.** Four full-cabinet images (1220 × 368): Warm, Cool and Off, plus one glow overlay shared by React and Cycle. The `View` parameter (10 steps) switches them through `IndexedEnabling/v/10`, and through `RangedEnabling` for the glow overlay.
-3. **Two tabs.** METER and SETUP (CALIBRATION, CLIP LEVEL, LIGHT box), each with its own background.
+3. **Three tabs.** METER, LUFS and SETUP, each with its own background.
+   - The LUFS tab draws the METER faces, needle sectors and glow strip **scaled to 0.8** of their image size. It is unknown whether the MPC scales Image filmstrips smoothly; the needles are thin, so watch for jaggies.
 4. **Transparent tap areas.** Transparent Buttons over the CLIP lamps fire the `Reset Clip` trigger.
 
 5. **React and Cycle lighting.**
    - A 169-step `Glow` parameter drives the face-glow filmstrip, drawn at 1/4 size. The steps are 3 palettes × 16 heat steps, then 120 hue steps, then 1 white clip-flash frame. The glow bleeds 10 px under the bezel so its soft edge is hidden.
    - The MPC must scale them up to their bounds. It is not yet known whether it scales filmstrip frames, or how smoothly.
    - The glow sits under a full-resolution transparent overlay (bezel, scale, legends).
+
+6. **Latency changes.** LIMITER on reports about 3.2 ms (`initialDelay` + `audioMasterIOChanged`); off reports 0. Whether the MPC re-reads latency at run time, and compensates it, is unknown.
+7. **Value Labels as readouts.** The LUFS numbers are `Label`s bound to read-only parameters, updated at 10 Hz.
+8. **Arrow buttons.** TARGET and CEILING arrows are toggle Buttons bound to self-resetting trigger parameters.
 
 ## Checklist
 
@@ -42,14 +47,23 @@ These questions can only be answered on a real MPC, ideally a Live III, and an X
 | 10 | Run two instances on different tracks with different lights | Independent |
 | 11 | Set LIGHT to REACT and play quiet, then loud, then stop | The dials glow blue when quiet, red near 0 VU and purple when pinned, then fade back to blue over about a second. The glow fills the dial windows exactly; there are no blocky edges or misaligned frames, and the printed scale stays crisp |
 | 12 | Set LIGHT to CYCLE; play a sequence at 120 BPM, then stop; change the tempo and time signature | One trip round the colour wheel per 2 bars, the same colour on the same beat every phrase. Pressing Play glides onto the beat. Cycling continues at the tempo when stopped |
-| 13 | Play a loop at about −6 VU and tap AUTO | The button glows for about 3 s, TRIM jumps to about +6.0 dB, the needles then sit around 0 VU. A second tap during listening cancels |
+| 13 | (Retired in v0.3: the METER tab's one-shot AUTO trim was removed. AUTO now lives on the LUFS tab, see 17–22) | – |
 | 14 | Play mono material, then wide stereo, then flip one channel's polarity | PHASE marker near +1, then near 0, then in the red near −1. With no signal the marker parks |
 | 15 | Push the meter, then tap a CLIP lamp | MAX shows the highest reading (in each dial's lower-right corner) and clears on the tap. Set CLIP LEVEL to −1 on SETUP: a −0.5 dBFS peak now lights CLIP |
 | 16 | Open the SETUP tab: try every CALIBRATION, CLIP LEVEL, LIGHT, PALETTE and RATE button, and Q-Links 13–16 and 9 | Settings apply on METER. In CYCLE, a clip flashes the dials white for one beat; the cabinet border never changes colour |
+| 17 | Open the LUFS tab while music plays | Needles move smoothly on the smaller dials (no jaggies or misalignment), the four numbers update and are readable at arm's length, and the status row shows AUTO OFF and the elapsed time |
+| 18 | Play a −23 dBFS 1 kHz sine (or a known −23 LUFS file) and tap CLEAR | INTEGRATED, SHORT-TERM and M read −23.0 (±0.1); TRUE PEAK MAX −23.0. RUN → HOLD freezes INTEGRATED, TRUE PEAK MAX and the time; CLEAR restarts them |
+| 19 | Tap TARGET and CEILING arrows; use Q-Links 13/14 on the LUFS tab | TARGET steps 0.5 LUFS (−23 … −9), CEILING 0.1 dB (−6.0 … −0.1); the arrow lights while pressed |
+| 20 | AUTO on with a quiet song (about −24 LUFS), TARGET −14 | LEARNING for about 3 s, then ADJUSTING and a slow rise (≤ 0.5 dB/s), then IN RANGE with about +10 dB. Stopping playback shows HOLD (SILENCE) and the gain stays. AUTO off glides back to 0 dB |
+| 21 | **Latency.** Play a sequence with a click or drum on another track. Toggle LIMITER on and off during playback | No clicks at the switch. Note whether this track shifts in time against the others when LIMITER is on (≈3.2 ms; the MPC should compensate). Repeat with two instances |
+| 22 | LIMITER on, TRIM +6 dB into a hot loop | GAIN REDUCTION shows a few dB, TRUE PEAK MAX stays at or below the CEILING, and AUTO shows LIMITED if it is also on. LIMITER off with the same trim shows CLIP RISK |
+| 23 | Save with AUTO/LIMITER/TARGET/CEILING/HOLD set, restart, reload | Settings restored (LIMITER latency reported again); readings start empty (--.-) |
 
 ## If something fails
 
 - **Sector boundary flicker or a doubled needle.** Try 2 sectors (bigger sprites), or blank first and show second. Both are one-line changes in `SlowOpsVUMeter.cpp` and `skin_layout.py`.
 - **Memory too high.** Use 96 or 64 frames per needle, or narrower sectors. `check_skins.py` prints the decoded budget.
 - **IndexedEnabling with many steps is unreliable.** Gate the face images on `Light` directly instead of `View`.
+- **The LUFS tab's scaled needles look poor.** Render dedicated LUFS needle strips at 0.8 size (about +18 MiB) instead of scaling.
+- **Latency changes are not compensated.** Keep the limiter but report a constant latency whenever LIMITER *could* be used (a SETUP option), or shorten the look-ahead.
 - **Glow strips are not scaled, or look blocky.** Set `REACT_GLOW_SCALE = 2` in `skin_layout.py` (about +40 MiB). If memory then gets tight, drop to two palettes.
