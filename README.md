@@ -30,9 +30,7 @@ The zip also contains **LUFS VU User Guide.html**, a one-page manual with every 
 - **CLIP lamps**: sample-peak at a selectable CLIP LEVEL, with an optional 2 s hold. Tap a lamp to reset it. This is not true-peak detection.
 - **LIGHT**: Warm, Cool, Off, **React** or **Cycle**.
   - **React** makes the dials glow blue → red → purple as the program heats up, with filament-like warm-up and cool-down.
-  ![react](docs/images/react.gif)
   - **Cycle** sweeps round the hue wheel once every two bars, locked to the MPC's tempo and song position. 
-  ![cycle](docs/images/cycle.gif)
 - **PHASE** correlation meter, **MAX** VU readouts, and a selectable **CLIP LEVEL** (0 / −0.3 / −1 / −3 dBFS).
 - **Three tabs.** METER has only the meters: the dials, PHASE, MAX and CLIP lamps. LUFS has the loudness readouts and the AUTO, TARGET, TRIM, LIMITER, CEILING, CLEAR, RUN/HOLD and BYPASS controls. SETUP has CALIBRATION, CLIP LEVEL, PEAK HOLD and a LIGHT box grouped as STATIC (warm/cool/off), REACT with its palette, and CYCLE with its rate.
 - **Data wheel**: touch any control and turn the MPC's main data wheel to change it (an amber ring shows the focus); press it for the large editor. TRIM is also on Q-Link 15 on both the METER and LUFS tabs.
