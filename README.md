@@ -1,8 +1,25 @@
 # Slow Ops LUFS VU (MPC)
 
-(Called "VU Meter" before v0.3.)
+Analog VU meters, EBU R 128 loudness and a true-peak limiter: an insert effect for Akai MPC standalone (MPC OS 3.10.1+). Version **1.0.0**. Called "VU Meter" before 1.0.
 
-An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
+| METER | LUFS | SETUP |
+|---|---|---|
+| ![METER tab on an MPC Live III](docs/images/mpc-meter.png) | ![LUFS tab on an MPC Live III](docs/images/mpc-lufs.png) | ![SETUP tab on an MPC Live III](docs/images/mpc-setup.png) |
+
+*Screenshots from an MPC Live III.*
+
+## Install
+
+1. Download `lufs-vu-1.0.0-mpc.zip` from the release and unzip it.
+2. Copy the `Slow Ops - VST - LUFS VU` folder into a folder named `VST2 Plugins` at the top level of a USB drive, SD card or the MPC's internal drive.
+3. On the MPC: **Preferences → Enhancements (Beta)**, then turn on **Enable Enhancements** and **External Plugin Support**. Restart the MPC.
+4. Add **Slow Ops › LUFS VU** as an insert effect (plugin browser → External Plugins).
+
+Updating from "VU Meter": delete the old `Slow Ops - VST - VU Meter` folder, then add LUFS VU again on any track that used it.
+
+The zip also contains **LUFS VU User Guide.html**, a one-page manual with every control (source: [docs/user-guide.html](docs/user-guide.html); full reference: [docs/CONTROLS.md](docs/CONTROLS.md)).
+
+## Features
 
 - **Stereo VU meter**: two independent L/R needles. With AUTO off, TRIM at 0.0 dB and LIMITER off it only measures, and the audio passes through bit-exact with zero latency.
 - **LUFS tab** (ITU-R BS.1770 / EBU R 128): INTEGRATED (gated), SHORT-TERM, MOMENTARY, TRUE PEAK MAX (4× oversampled, post-processing) and limiter GAIN REDUCTION, on a smoked-glass "radio dial" strip under the same VU meters. CLEAR and RUN/HOLD control the measurement.
@@ -19,11 +36,7 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 - **Data wheel**: touch any control and turn the MPC's main data wheel to change it (an amber ring shows the focus); press it for the large editor. TRIM is also on Q-Link 15 on both the METER and LUFS tabs.
 - **Output TRIM** (±12 dB, smoothed; on the LUFS tab) and **BYPASS** (on the LUFS tab). With TRIM at 0.0 dB (and AUTO off), or with Bypass on, the output is a **bit-exact** copy of the input. Every meter reads the output signal.
 
-| METER | LUFS | SETUP |
-|---|---|---|
-| ![meter](docs/images/preview-stereo.png) | ![lufs](docs/images/preview-lufs.png) | ![setup](docs/images/preview-setup.png) |
-
-*Previews are rendered on the desktop from the real skin assets. Hardware captures go in `docs/HARDWARE_RESULTS.md`.*
+Desktop previews rendered from the skin assets (all lights and palettes) are in [docs/images](docs/images).
 
 ## Status
 
@@ -31,27 +44,21 @@ An analog-style VU meter insert effect for Akai MPC standalone (MPC OS 3.10.1+).
 |---|---|
 | Core engine (ballistics, calibration, clip, trim, React heat, Cycle hue, correlation, loudness, true peak, limiter, AUTO) | Tested on desktop (`core_tests`, 126 checks, including EBU Tech 3341 cases 1–5 and 9) |
 | Loudness and true peak against an independent meter | `lufs_crosscheck` vs FFmpeg `ebur128`: I within 0.1 LU, TP within 0.3 dB |
-| Real plugin binary through the VST2 ABI | Tested on desktop (`host_sim` 20 and `scenario_host` 101 checks) |
+| Real plugin binary through the VST2 ABI | Tested on desktop (`host_sim` 20 and `scenario_host` 105 checks) |
 | Skin JSON / assets consistency | Tested on desktop (`check_skins.py`) |
-| **Needle animation, view switching, memory, latency compensation on an MPC** | **Not yet tested.** See `docs/SPIKE.md` |
+| On an MPC Live III | All three tabs, needles, lights, data-wheel focus and LUFS readouts working (screenshots above). Remaining checklist items: `docs/SPIKE.md` |
 
-## Build and test
+## Build and test (developers)
 
 ```sh
 git submodule update --init           # SDK pinned at febd2ca
 ./scripts/test.sh                     # native + arm32 + arm64, validation, all tests (+ FFmpeg cross-check if installed)
-./scripts/package.sh                  # dist/lufs-vu-<version>-mpc.zip
+./scripts/release.sh                  # tests, then dist/lufs-vu-<version>-mpc.zip (+ INSTALL.txt, user guide)
 MPC_ADDRESS=<ip> ./scripts/deploy.sh  # install over the network (developer mode) and restart
 ./scripts/make_art.sh                 # redraw skin PNGs + previews (creates build/venv with Pillow)
 ```
 
 The output folder is `plugin/build/Slow Ops - VST - LUFS VU/`.
-
-## Install on the MPC
-
-1. Copy `Slow Ops - VST - LUFS VU` into a `VST2 Plugins` folder at the top level of a drive.
-2. On MPC OS 3.10.1 or later, go to **Preferences → Enhancements (Beta)** and turn on **Enable Enhancements** and **External Plugin Support**. Restart.
-3. Add **Slow Ops › LUFS VU** as an insert effect. The MPC only rereads skins on restart.
 
 ## Layout
 

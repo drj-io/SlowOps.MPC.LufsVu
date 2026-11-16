@@ -1,9 +1,10 @@
 # Hardware results
 
-Nothing has been tested on an MPC yet. Run the checklist in `SPIKE.md` and record each result here.
+Run the checklist in `SPIKE.md` and record each result here.
 
 | Date | Device | MPC OS | Build (git hash) | Check # | Result | Notes / screenshot |
 |---|---|---|---|---|---|---|
+| 2026-11-15 | MPC Live III | | f2f172b | 16, 17, 24, 25, 26 (visual) | Pass | METER, LUFS and SETUP render correctly; needles aligned on the large and LUFS dials; data-wheel focus ring shows; −10 dBFS calibration and plate; LUFS readouts, AUTO IN RANGE and LIMITER live. Screenshots: `images/mpc-meter.png`, `images/mpc-lufs.png`, `images/mpc-setup.png` |
 | | MPC Live III | | | | | |
 | | MPC XL | | | | | |
 

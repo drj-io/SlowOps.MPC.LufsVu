@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LUFS VU User Guide</title>
+<!-- Source file. scripts/release.sh inlines the fonts and images (data: URIs) so the copy in the
+     release zip is a single self-contained file. -->
+<style>
+@font-face { font-family: "Titillium Web"; font-weight: 600; src: url("../assets/fonts/TitilliumWeb-SemiBold.ttf"); }
+@font-face { font-family: "Titillium Web"; font-weight: 700; src: url("../assets/fonts/TitilliumWeb-Bold.ttf"); }
+:root {
+  --bg: #11121f; --panel: #181a2b; --line: #2c2e48; --text: #e9e3d6; --muted: #a9a3b8;
+  --amber: #ffba5c; --brass: #c99246; --red: #ff3448; --code: #23253b;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #faf6ee; --panel: #ffffff; --line: #e3d9c6; --text: #241a12; --muted: #6b5f52;
+    --amber: #a85e00; --brass: #9c6a2a; --red: #c4142a; --code: #f1eadc;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11121f; --panel: #181a2b; --line: #2c2e48; --text: #e9e3d6; --muted: #a9a3b8;
+  --amber: #ffba5c; --brass: #c99246; --red: #ff3448; --code: #23253b;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+       font: 16px/1.6 "Titillium Web", system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 600; }
+main { max-width: 920px; margin: 0 auto; padding: 32px 16px 64px; }
+header { text-align: center; padding: 24px 0 8px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+header .maker { letter-spacing: .3em; color: var(--brass); font-size: 13px; text-transform: uppercase; }
+h1 { font-weight: 700; font-size: 44px; margin: 4px 0; letter-spacing: .02em; }
+h1 span { color: var(--amber); }
+header p { color: var(--muted); margin: 4px 0 0; }
+h2 { font-weight: 700; color: var(--amber); font-size: 24px; margin: 40px 0 8px; letter-spacing: .03em; }
+h3 { font-weight: 700; font-size: 18px; margin: 24px 0 6px; }
+p, li { color: var(--text); }
+.muted { color: var(--muted); }
+figure { margin: 16px 0 24px; }
+figure img { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--line); }
+figcaption { color: var(--muted); font-size: 14px; margin-top: 6px; text-align: center; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { white-space: nowrap; color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+td:first-child { white-space: nowrap; font-weight: 700; }
+td.ql { white-space: nowrap; color: var(--muted); text-align: center; }
+.table-wrap { overflow-x: auto; }
+.note { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--brass);
+        border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+.warn { border-left-color: var(--red); }
+code { background: var(--code); padding: 1px 6px; border-radius: 4px; font-size: 14px; }
+ol li, ul li { margin: 4px 0; }
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; text-align: center; }
+@media (max-width: 600px) { h1 { font-size: 34px; } td:first-child { white-space: normal; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="maker">Slow Ops</div>
+  <h1>LUFS <span>VU</span></h1>
+  <p>Analog VU meters, EBU R 128 loudness and a true-peak limiter for Akai MPC standalone</p>
+  <p class="muted">Version 1.0.0</p>
+</header>
+
+<figure>
+  <img src="images/mpc-meter.png" alt="The METER tab on an MPC Live III: two large walnut-cased VU meters with clip lamps, a 0 VU plate and a phase meter">
+  <figcaption>METER: two VU needles, CLIP lamps, MAX readings and a PHASE meter (MPC Live III)</figcaption>
+</figure>
+
+<p>LUFS VU is an insert effect for MPC standalone hardware. It has three pages:</p>
+<ul>
+  <li><b>METER:</b> a pair of classic VU meters.</li>
+  <li><b>LUFS:</b> a loudness meter with optional automatic loudness and a true-peak limiter.</li>
+  <li><b>SETUP:</b> calibration and the dial lighting.</li>
+</ul>
+<p>Out of the box it only measures: the audio passes through untouched, with no added delay.</p>
+
+<h2>Requirements</h2>
+<ul>
+  <li>An MPC standalone running <b>MPC OS 3.10.1 or later</b> (tested on an MPC Live III).</li>
+  <li>External plugins switched on: <b>Preferences → Enhancements (Beta)</b>, then turn on <b>Enable Enhancements</b> and <b>External Plugin Support</b>.</li>
+</ul>
+
+<h2>Install</h2>
+<ol>
+  <li>Unzip the download. Inside is a folder named <code>Slow Ops - VST - LUFS VU</code>.</li>
+  <li>Copy that folder into a folder named exactly <code>VST2 Plugins</code> at the top level of a USB drive, an SD card or the MPC's internal drive. Create <code>VST2 Plugins</code> if it isn't there. Keep the plugin folder's name exactly as it is: the MPC uses it to find the screens.</li>
+  <li>Restart the MPC.</li>
+  <li>Add <b>Slow Ops › LUFS VU</b> as an insert effect on a track, program or the master. You'll find it in the plugin browser under <b>External Plugins</b>.</li>
+</ol>
+<div class="note"><b>Updating from "VU Meter".</b> Before 1.0 this plugin was called <i>VU Meter</i>. Delete the old <code>Slow Ops - VST - VU Meter</code> folder when you install this one, then add LUFS VU again on any track that used the old one.</div>
+
+<h2>Using it</h2>
+<p><b>Touch, then turn.</b> Touch any control (a button, a row of choices, the TARGET or CEILING arrows, the TRIM knob) and an amber ring shows it is selected. The MPC's main <b>data wheel</b> then changes it; hold <b>SHIFT</b> for fine steps. Press the data wheel or <b>ENTER</b> for the large editor. The Q-Link knobs work too: the table below lists which knob does what on each page.</p>
+<p>Signal path: <b>in → AUTO + TRIM → LIMITER → out</b>. Every meter on every page reads the <b>output</b>, so the pages always agree.</p>
+
+<h3>METER</h3>
+<div class="table-wrap"><table>
+<tr><th>Control</th><th>Q-Link</th><th>What it does</th></tr>
+<tr><td>VU needles</td><td class="ql">–</td><td>Average level with real VU ballistics: about 300 ms to settle, a slight overshoot. A VU meter does not show peaks; the CLIP lamps do.</td></tr>
+<tr><td>CLIP lamps</td><td class="ql">–</td><td>Light when a sample reaches the CLIP LEVEL (set on SETUP). Tap a lamp to reset it and the MAX readings.</td></tr>
+<tr><td>MAX</td><td class="ql">–</td><td>The highest reading each needle has reached since the last lamp tap.</td></tr>
+<tr><td>PHASE</td><td class="ql">–</td><td>Stereo correlation: <b>+1</b> mono-safe, <b>0</b> wide, <b>−1</b> (red) cancels when summed to mono.</td></tr>
+<tr><td>0 VU plate</td><td class="ql">–</td><td>Shows the current CALIBRATION.</td></tr>
+<tr><td>TRIM</td><td class="ql">15</td><td>The output TRIM from the LUFS page, on a knob, so you can ride it while watching the needles.</td></tr>
+</table></div>
+
+<figure>
+  <img src="images/mpc-lufs.png" alt="The LUFS tab: smaller VU meters above an amber readout strip showing integrated, short-term, true peak and gain reduction, with AUTO, TARGET, TRIM, LIMITER, CEILING and BYPASS controls below">
+  <figcaption>LUFS: loudness readouts with AUTO loudness and the true-peak LIMITER switched on</figcaption>
+</figure>
+
+<h3>LUFS</h3>
+<p>Loudness to ITU-R BS.1770 / EBU R 128, measured on the output.</p>
+<div class="table-wrap"><table>
+<tr><th>Readout</th><th>What it shows</th></tr>
+<tr><td>INTEGRATED</td><td>The loudness of the whole programme since CLEAR, in LUFS. Silence and quiet gaps don't pull it down.</td></tr>
+<tr><td>SHORT-TERM</td><td>The last 3 seconds, live.</td></tr>
+<tr><td>M</td><td>Momentary: the last 0.4 seconds (status row).</td></tr>
+<tr><td>TRUE PEAK MAX</td><td>The highest peak between samples since CLEAR, in dBTP. It can read higher than the CLIP lamps, which watch the samples themselves.</td></tr>
+<tr><td>GAIN REDUCTION</td><td>How much the LIMITER is turning down right now.</td></tr>
+<tr><td>Status row</td><td>Time since CLEAR, the AUTO status (LEARNING, ADJUSTING, IN RANGE, HOLD, GAIN LIMIT, LIMITED or CLIP RISK) and the gain AUTO is applying.</td></tr>
+</table></div>
+<div class="table-wrap"><table>
+<tr><th>Control</th><th>Q-Link</th><th>What it does</th></tr>
+<tr><td>CLEAR</td><td class="ql">–</td><td>Restarts the measurement (INTEGRATED, TRUE PEAK MAX, the time and AUTO's estimate). The audio does not jump.</td></tr>
+<tr><td>RUN / HOLD</td><td class="ql">10</td><td>HOLD freezes INTEGRATED, TRUE PEAK MAX and the time. It is a measurement hold, not a mute.</td></tr>
+<tr><td>AUTO</td><td class="ql">16</td><td>Gently steers the integrated loudness towards TARGET. It listens for about 3 s first, then moves no faster than 0.5 dB per second. It holds through silence, never goes beyond ±12 dB, and glides back to 0 dB when switched off. It is a live best estimate: it can't know how loud the rest of the song will be.</td></tr>
+<tr><td>TARGET ◀ ▶</td><td class="ql">13</td><td>−23 to −9 LUFS in 0.5 steps (default −14).</td></tr>
+<tr><td>TRIM</td><td class="ql">15</td><td>Output gain, ±12 dB. With AUTO on it offsets the target: TARGET −14 with TRIM +1 gives about −13 LUFS.</td></tr>
+<tr><td>LIMITER</td><td class="ql">9</td><td>A stereo-linked true-peak limiter. While it is on it adds about 3 ms of delay, which is reported to the MPC.</td></tr>
+<tr><td>CEILING ◀ ▶</td><td class="ql">14</td><td>The highest true peak the LIMITER lets through: −6.0 to −0.1 dBTP (default −1.0). It does nothing while the LIMITER is off.</td></tr>
+<tr><td>BYPASS</td><td class="ql">11</td><td>Output = input, untouched: AUTO, TRIM and the LIMITER are skipped.</td></tr>
+</table></div>
+
+<figure>
+  <img src="images/mpc-setup.png" alt="The SETUP tab: CALIBRATION, CLIP LEVEL and PEAK HOLD cards above a LIGHT box with static, react and cycle options">
+  <figcaption>SETUP: calibration, clip level, peak hold and dial lighting</figcaption>
+</figure>
+
+<h3>SETUP</h3>
+<div class="table-wrap"><table>
+<tr><th>Control</th><th>Q-Link</th><th>What it does</th></tr>
+<tr><td>CALIBRATION</td><td class="ql">13</td><td>Which level reads 0 VU: −20, −18, −14, −10 or −4 dBFS. <b>−18</b> suits tracking and mixing. Loud, heavily compressed masters pin the needles; try <b>−10</b> or <b>−4</b> for them.</td></tr>
+<tr><td>CLIP LEVEL</td><td class="ql">14</td><td>The level that lights the CLIP lamps: 0, −0.3, −1 or −3 dBFS.</td></tr>
+<tr><td>PEAK HOLD</td><td class="ql">10</td><td>ON keeps a CLIP lamp lit for 2 seconds after a clip.</td></tr>
+<tr><td>LIGHT: STATIC</td><td class="ql">15</td><td>A fixed backlight: WARM, COOL or OFF.</td></tr>
+<tr><td>LIGHT: REACT</td><td class="ql">15, 16</td><td>The dials glow with the music's level, in the THERMAL, NEON or AMBER palette.</td></tr>
+<tr><td>LIGHT: CYCLE</td><td class="ql">15, 9</td><td>The dials travel round the colour wheel once every 1, 2, 4 or 8 bars, locked to the MPC's tempo.</td></tr>
+</table></div>
+
+<h2>Tips</h2>
+<ul>
+  <li><b>Mixing:</b> CALIBRATION −18, and aim for the needles to swing around 0 VU on the loud parts.</li>
+  <li><b>Checking a master:</b> put LUFS VU last on the master, press CLEAR, and play the whole song. INTEGRATED is the song's loudness; keep TRUE PEAK MAX below about −1 dBTP.</li>
+  <li><b>Hands-off loudness:</b> AUTO on, set TARGET, LIMITER on with CEILING −1.0. Give AUTO a few seconds to learn.</li>
+  <li>Readings are not saved with the project (they start empty after loading). All settings are saved.</li>
+</ul>
+
+<h2>Uninstall</h2>
+<p>Delete the <code>Slow Ops - VST - LUFS VU</code> folder from <code>VST2 Plugins</code> and restart the MPC. Projects that used it still open, without the effect.</p>
+
+<div class="note warn"><b>Please note.</b> Third-party plugins are not supported by inMusic / Akai. A plugin runs inside the MPC software, so save your work often, and test it well before relying on it live. If the MPC misbehaves, remove the folder and restart.</div>
+
+<footer>LUFS VU 1.0.0 · Slow Ops · MIT licence · Font: Titillium Web (SIL Open Font License 1.1)</footer>
+</main>
+</body>
+</html>
