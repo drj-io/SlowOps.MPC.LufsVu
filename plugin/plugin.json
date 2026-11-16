@@ -1,7 +1,7 @@
 {
   "name": "LUFS VU",
   "manufacturer": "Slow Ops",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "format": "vst2",
   "kind": "effect",
   "uid": "SoVM",

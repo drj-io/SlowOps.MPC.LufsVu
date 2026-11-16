@@ -1,6 +1,6 @@
 # Slow Ops LUFS VU (MPC)
 
-Analog VU meters, EBU R 128 loudness and a true-peak limiter: an insert effect for Akai MPC standalone (MPC OS 3.10.1+). Version **1.0.0**. Called "VU Meter" before 1.0.
+Analog VU meters, EBU R 128 loudness and a true-peak limiter: an insert effect for Akai MPC standalone (MPC OS 3.10.1+). Version **1.0.1**. Called "VU Meter" before 1.0.
 
 | METER | LUFS | SETUP |
 |---|---|---|
@@ -10,7 +10,7 @@ Analog VU meters, EBU R 128 loudness and a true-peak limiter: an insert effect f
 
 ## Install
 
-1. Download `lufs-vu-1.0.0-mpc.zip` from the release and unzip it.
+1. Download `lufs-vu-1.0.1-mpc.zip` from the release and unzip it.
 2. Copy the `Slow Ops - VST - LUFS VU` folder into a folder named `VST2 Plugins` at the top level of a USB drive, SD card or the MPC's internal drive.
 3. On the MPC: **Preferences → Enhancements (Beta)**, then turn on **Enable Enhancements** and **External Plugin Support**. Restart the MPC.
 4. Add **Slow Ops › LUFS VU** as an insert effect (plugin browser → External Plugins).
@@ -78,4 +78,6 @@ tests/lufs_crosscheck.cpp       renders programmes for scripts/lufs_crosscheck.p
 
 **Needle rendering.** Each needle is split into 4 angular *sector* filmstrips. Each sector is a small transparent sprite, and frame 0 is blank. The plugin shows exactly one sector per needle. This keeps the METER needle art at about 30 MiB decoded. METER's walnut cabinet fills the page with 560 × 400 faces. The LUFS tab keeps the smaller v0.2 dial geometry, with its own 0.8-size faces and needle strips (the MPC never shrinks an image) and a 1/8-size glow strip. All images together decode to at most about 131 MiB (counted per widget, so an upper bound). Faces are swapped by a plugin-computed `View` parameter (the Light setting). The v0.1 MONO view was retired in v0.2; its parameter slots remain so indices stay stable, but they are unused.
 
-Font: Titillium Web (SIL OFL 1.1, `assets/fonts/OFL.txt`). Licence: MIT.
+## Licence
+
+MIT: see [LICENSE](LICENSE). Font: Titillium Web (SIL OFL 1.1, `assets/fonts/OFL.txt`).

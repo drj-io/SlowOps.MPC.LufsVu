@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build, test and package a release:
-#   dist/lufs-vu-<version>-mpc.zip  =  "Slow Ops - VST - LUFS VU/" + INSTALL.txt + "LUFS VU User Guide.html"
+#   dist/lufs-vu-<version>-mpc.zip  =  "Slow Ops - VST - LUFS VU/" + INSTALL.txt + "LUFS VU User Guide.html" + LICENSE.txt
 # The guide (docs/user-guide.html) is written into the zip as one self-contained file: its
 # screenshots and fonts are inlined as data: URIs, so it opens offline and adds no folders that
 # could end up inside "VST2 Plugins".
@@ -31,5 +31,6 @@ with zipfile.ZipFile(zpath, 'a', zipfile.ZIP_DEFLATED) as z:
     if 'LUFS VU User Guide.html' in z.namelist():
         raise SystemExit('release: the zip already has a guide')
     z.writestr('LUFS VU User Guide.html', html)
+    z.write('LICENSE', 'LICENSE.txt')
 print('release: %s (%.1f MB)' % (zpath, os.path.getsize(zpath) / 1e6))
 PY

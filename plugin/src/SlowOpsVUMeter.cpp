@@ -197,7 +197,7 @@ public:
         info.name = "LUFS VU";              // renamed from "VU Meter" in v0.3 (uid and parameter ids unchanged)
         info.vendor = "Slow Ops";
         info.uniqueId = MPC_FOURCC('S', 'o', 'V', 'M');
-        info.version = 1000;           // 1.0.0
+        info.version = 1001;           // 1.0.1
         info.isInstrument = false;
         info.numInputs = 2;
         info.numOutputs = 2;

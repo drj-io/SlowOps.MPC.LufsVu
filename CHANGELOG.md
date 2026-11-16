@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 (2026-11-16)
+
+- Adds the MIT `LICENSE` file to the repository and to the release zip. No changes to the audio, the controls or the skin.
+
 ## 1.0.0 (2026-11-15)
 
 First release as **LUFS VU** (formerly "VU Meter"; plugin ID `SoVM` and all parameter IDs unchanged).
